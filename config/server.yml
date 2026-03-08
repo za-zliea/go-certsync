@@ -1,0 +1,16 @@
+address: 0.0.0.0
+port: 8080
+token: your-auth-token
+storage: your-cert-storage
+cert_check_time: "03:00:00"
+dns: dns-server
+certs:
+- alias: example.com
+  auth: your-cert-auth
+  email: your-cert-email
+  domain: example.com
+  domain_cn: []
+  domain_check: https://example.com
+  provider: TENCENT
+  ak: your-access-key
+  sk: your-access-key-secret

@@ -1,0 +1,15 @@
+[Unit]
+Description=CertSync Server Service
+Documentation=https://github.com/za-zliea/go-certsync
+After=syslog.target network-online.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nobody
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/certsync-server -c /etc/certsync/server.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

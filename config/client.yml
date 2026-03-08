@@ -1,0 +1,7 @@
+server: https://your-server.com
+token: your-server-token
+cert_alias: example.com
+cert_auth: cert.example.com:8443
+cert_update_dir: /etc/nginx/ssl/example.com
+cert_update_cmd: nginx -s reload
+interval: 86400

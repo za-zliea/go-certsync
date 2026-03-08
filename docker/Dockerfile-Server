@@ -1,0 +1,15 @@
+FROM zliea/ubuntu:focal
+
+ENV CONFIG_DIR=/etc/certsync
+
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get -y install ca-certificates --no-install-recommends \
+ && update-ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir ${CONFIG_DIR}
+
+ADD output/certsync-server /usr/local/bin
+ADD docker/docker-entrypoint-server.sh /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["certsync-server"]
