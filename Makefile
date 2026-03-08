@@ -27,11 +27,15 @@ build:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client src/client/main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server src/server/main.go
 docker:
-	docker pull zliea/ubuntu:focal
+	docker pull ubuntu:focal
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-ubuntu -f docker/Dockerfile-Client .; fi
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION) -f docker/Dockerfile-Client .; fi
 	docker build -t zliea/certsync-client:ubuntu -f docker/Dockerfile-Client .
 	docker build -t zliea/certsync-client:latest -f docker/Dockerfile-Client .
+	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client-docker:$(VERSION)-ubuntu -f docker/Dockerfile-Client-Docker .; fi
+	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client-docker:$(VERSION) -f docker/Dockerfile-Client-Docker .; fi
+	docker build -t zliea/certsync-client-docker:ubuntu -f docker/Dockerfile-Client-Docker .
+	docker build -t zliea/certsync-client-docker:latest -f docker/Dockerfile-Client-Docker .
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-server:$(VERSION)-ubuntu -f docker/Dockerfile-Server .; fi
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-server:$(VERSION) -f docker/Dockerfile-Server .; fi
 	docker build -t zliea/certsync-server:ubuntu -f docker/Dockerfile-Server .
@@ -40,6 +44,8 @@ docker-alpine:
 	docker pull alpine:latest
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-alpine -f docker/Dockerfile-Client-Alpine .; fi
 	docker build -t zliea/certsync-client:alpine -f docker/Dockerfile-Client-Alpine .
+	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client-docker:$(VERSION)-alpine -f docker/Dockerfile-Client-Docker-Alpine .; fi
+	docker build -t zliea/certsync-client-docker:alpine -f docker/Dockerfile-Client-Docker-Alpine .
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-server:$(VERSION)-alpine -f docker/Dockerfile-Server-Alpine .; fi
 	docker build -t zliea/certsync-server:alpine -f docker/Dockerfile-Server-Alpine .
 push:
@@ -47,6 +53,10 @@ push:
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client:$(VERSION); fi
 	docker push zliea/certsync-client:ubuntu
 	docker push zliea/certsync-client:latest
+	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client-docker:$(VERSION)-ubuntu; fi
+	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client-docker:$(VERSION); fi
+	docker push zliea/certsync-client-docker:ubuntu
+	docker push zliea/certsync-client-docker:latest
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-server:$(VERSION)-ubuntu; fi
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-server:$(VERSION); fi
 	docker push zliea/certsync-server:ubuntu
@@ -54,6 +64,8 @@ push:
 push-alpine:
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client:$(VERSION)-alpine; fi
 	docker push zliea/certsync-client:alpine
+	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client-docker:$(VERSION)-alpine; fi
+	docker push zliea/certsync-client-docker:alpine
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-server:$(VERSION)-alpine; fi
 	docker push zliea/certsync-server:alpine
 clean:

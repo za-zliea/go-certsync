@@ -2,7 +2,7 @@ FROM alpine:3
 
 ENV CONFIG_DIR=/etc/certsync
 
-RUN apk add --no-cache ca-certificates \
+RUN apk add --no-cache ca-certificates docker-cli \
  && update-ca-certificates \
  && rm -rf /var/cache/apk/* \
  && mkdir ${CONFIG_DIR}
