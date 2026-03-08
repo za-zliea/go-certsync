@@ -191,4 +191,4 @@ GET /api/{alias}/download?auth={cert_auth}
 Authorization: {server_token}
 ```
 
-Response: ZIP file containing `fullchain.pem` and `privkey.pem`
+Response: ZIP file containing `cert.pem`, `chain.pem`, `fullchain.pem`, and `privkey.pem`
