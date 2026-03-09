@@ -2,6 +2,8 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 OUTPUT_DIR := $(MKFILE_DIR)output
 
+.PHONY: build-all build docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push
+
 build-all:
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
