@@ -2,7 +2,7 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 OUTPUT_DIR := $(MKFILE_DIR)output
 
-.PHONY: build-all build docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push
+.PHONY: build-all build docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push install uninstall
 
 build-all:
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
@@ -96,3 +96,19 @@ image: clean build docker
 image-push: image push
 image-alpine: clean build docker-alpine
 image-alpine-push: image-alpine push-alpine
+
+# 安装到系统 (需要 root 权限)
+install: build
+	install -m 755 $(OUTPUT_DIR)/certsync-client /usr/local/bin/certsync-client
+	install -m 755 $(OUTPUT_DIR)/certsync-server /usr/local/bin/certsync-server
+	install -m 644 systemd/certsync-client.service /etc/systemd/system/certsync-client.service
+	install -m 644 systemd/certsync-server.service /etc/systemd/system/certsync-server.service
+	systemctl daemon-reload
+
+# 从系统卸载 (需要 root 权限)
+uninstall:
+	rm -f /usr/local/bin/certsync-client
+	rm -f /usr/local/bin/certsync-server
+	rm -f /etc/systemd/system/certsync-client.service
+	rm -f /etc/systemd/system/certsync-server.service
+	systemctl daemon-reload
