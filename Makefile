@@ -99,6 +99,10 @@ image-alpine-push: image-alpine push-alpine
 
 # 安装到系统 (需要 root 权限)
 install:
+	@if [ "$$(id -u)" != "0" ]; then \
+		echo "Error: This target requires root privileges. Use 'sudo make install'"; \
+		exit 1; \
+	fi
 	install -m 755 $(OUTPUT_DIR)/certsync-client /usr/local/bin/certsync-client
 	install -m 755 $(OUTPUT_DIR)/certsync-server /usr/local/bin/certsync-server
 	install -m 644 systemd/certsync-client.service /etc/systemd/system/certsync-client.service
@@ -110,6 +114,10 @@ install:
 
 # 从系统卸载 (需要 root 权限)
 uninstall:
+	@if [ "$$(id -u)" != "0" ]; then \
+		echo "Error: This target requires root privileges. Use 'sudo make uninstall'"; \
+		exit 1; \
+	fi
 	rm -f /usr/local/bin/certsync-client
 	rm -f /usr/local/bin/certsync-server
 	rm -f /etc/systemd/system/certsync-client.service
