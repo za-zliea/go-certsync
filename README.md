@@ -109,15 +109,12 @@ docker run -d --name certsync-client -v ./:/etc/certsync zliea/certsync-client:l
 # Build
 make build
 
-# Install binary and systemd service (requires root)
+# Install binary, systemd service and generate config (requires root)
 sudo make install
 
-# Create config directory
-sudo mkdir -p /etc/certsync
-
-# Generate config
-certsync-server -g -c /etc/certsync/server.conf
-certsync-client -g -c /etc/certsync/client.conf
+# Edit config
+vi /etc/certsync/server.conf
+vi /etc/certsync/client.conf
 
 # Enable and start service
 sudo systemctl enable --now certsync-server

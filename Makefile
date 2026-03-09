@@ -103,6 +103,9 @@ install:
 	install -m 755 $(OUTPUT_DIR)/certsync-server /usr/local/bin/certsync-server
 	install -m 644 systemd/certsync-client.service /etc/systemd/system/certsync-client.service
 	install -m 644 systemd/certsync-server.service /etc/systemd/system/certsync-server.service
+	mkdir -p /etc/certsync
+	test -f /etc/certsync/server.conf || /usr/local/bin/certsync-server -g -c /etc/certsync/server.conf
+	test -f /etc/certsync/client.conf || /usr/local/bin/certsync-client -g -c /etc/certsync/client.conf
 	systemctl daemon-reload
 
 # 从系统卸载 (需要 root 权限)
