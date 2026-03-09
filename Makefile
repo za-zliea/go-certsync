@@ -98,7 +98,7 @@ image-alpine: clean build docker-alpine
 image-alpine-push: image-alpine push-alpine
 
 # 安装到系统 (需要 root 权限)
-install: build
+install:
 	install -m 755 $(OUTPUT_DIR)/certsync-client /usr/local/bin/certsync-client
 	install -m 755 $(OUTPUT_DIR)/certsync-server /usr/local/bin/certsync-server
 	install -m 644 systemd/certsync-client.service /etc/systemd/system/certsync-client.service
