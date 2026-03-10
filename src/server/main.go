@@ -54,6 +54,8 @@ func main() {
 				Provider:        "TENCENT",
 				AccessKey:       "your-access-key",
 				AccessKeySecret: "your-access-key-secret",
+				AutoRenew:       true,
+				UploadToken:     "your-upload-token",
 			},
 		}
 		err := config.WriteConfig(configFileServer, &metaData)
@@ -95,8 +97,11 @@ func main() {
 	atreugoServer := atreugo.New(atreugoConfig)
 
 	atreugoServer.GET("/", server.IndexHandler)
+	atreugoServer.GET("/h5/upload", server.UploadPageHandler)
 	atreugoServer.GET("/api/{alias}/check", server.CheckHandler)
 	atreugoServer.GET("/api/{alias}/download", server.DownloadHandler)
+	atreugoServer.GET("/api/{alias}/upload_verify", server.VerifyUploadTokenHandler)
+	atreugoServer.POST("/api/{alias}/upload", server.UploadHandler)
 
 	if err := atreugoServer.ListenAndServe(); err != nil {
 		scheduler.Stop()

@@ -10,4 +10,6 @@ type CertConfig struct {
 	Provider        string   `yaml:"provider"`
 	AccessKey       string   `yaml:"ak"`
 	AccessKeySecret string   `yaml:"sk"`
+	AutoRenew       bool     `yaml:"auto_renew"`
+	UploadToken     string   `yaml:"upload_token"`
 }

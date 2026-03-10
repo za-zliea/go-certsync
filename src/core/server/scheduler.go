@@ -76,6 +76,13 @@ func (s *Scheduler) CheckAllCerts() {
 
 func (s *Scheduler) checkAndRenewCert(certConfig *meta.CertConfig) {
 	alias := certConfig.Alias
+
+	// Skip auto-renewal if disabled
+	if !certConfig.AutoRenew {
+		slog.Info("Skipping certificate (auto_renew disabled)", "alias", alias)
+		return
+	}
+
 	slog.Info("Checking certificate", "alias", alias)
 
 	var localExpiry time.Time

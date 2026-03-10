@@ -9,6 +9,7 @@ A certificate synchronization service for SSL/TLS certificates [GitHub](https://
 - Base on [atreugo](https://github.com/savsgio/atreugo) Web Server Framework.
 - Automatic certificate renewal using ACME (Let's Encrypt).
 - Certificate distribution via HTTP API.
+- Manual certificate upload via web page or API.
 
 ### Client
 
@@ -136,16 +137,30 @@ address: 0.0.0.0                        # Listen address
 port: 8080                              # Listen port
 token: your-server-token-abcde12345     # Client and server auth token
 storage: /var/lib/certsync              # Certificate storage directory
-cert_check_time: "030000"               # Daily certificate check time (HHMMSS)
+cert_check_time: "03:00:00"             # Daily certificate check time (HH:MM:SS)
+dns: 8.8.8.8                            # DNS server for propagation check (optional)
 certs:
   - alias: example.com                  # Certificate alias (used in API)
     auth: your-cert-auth-token          # Certificate auth token
+    email: admin@example.com            # Email for Let's Encrypt registration
     domain: example.com                 # Domain for certificate
+    domain_cn:                          # Subject Alternative Names
+      - example.com
+      - www.example.com
     domain_check: https://example.com   # URL to check current certificate
     provider: TENCENT                   # DNS provider (TENCENT/ALIYUN/GODADDY/GOOGLE/CLOUDFLARE)
     ak: your-access-key                 # Access Key ID
     sk: your-access-key-secret          # Access Key Secret
+    auto_renew: true                    # Enable automatic renewal via Let's Encrypt
+    upload_token: your-upload-token     # Token for manual upload (used when auto_renew: false)
 ```
+
+#### Certificate Modes
+
+| `auto_renew` | Mode | Description |
+|--------------|------|-------------|
+| `true` | Auto Renewal | Server automatically obtains/renews certificates via Let's Encrypt ACME |
+| `false` | Manual Upload | Certificates must be uploaded manually via API or web page |
 
 ### Client Config
 
@@ -190,3 +205,50 @@ Authorization: {server_token}
 ```
 
 Response: ZIP file containing `cert.pem`, `chain.pem`, `fullchain.pem`, and `privkey.pem`
+
+### Verify Upload Token
+
+```
+GET /api/{alias}/upload_verify?upload_token={upload_token}
+```
+
+Response:
+```json
+{
+  "code": 0,
+  "message": "upload token is valid"
+}
+```
+
+### Upload Certificate
+
+```
+POST /api/{alias}/upload?upload_token={upload_token}
+Content-Type: multipart/form-data
+
+fullchain: <fullchain.pem file>
+privkey: <privkey.pem file>
+```
+
+Response:
+```json
+{
+  "code": 0,
+  "message": "certificate uploaded successfully"
+}
+```
+
+## Web Upload Page
+
+Access the web-based certificate upload page at:
+
+```
+http://your-server:8080/h5/upload
+```
+
+This page provides a user-friendly interface for manually uploading certificates:
+1. Enter the certificate alias and upload token
+2. After token verification, select the fullchain and private key files
+3. Click upload to submit the certificate
+
+Note: Manual upload is only available when `auto_renew: false` is set for the certificate.
