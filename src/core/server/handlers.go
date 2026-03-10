@@ -32,7 +32,7 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 		return ctx.JSONResponse(FailedWithS("auth failed", 401), 401)
 	}
 
-	certAlias, certAuth, err := getCertAuth(ctx)
+	certAlias, certAuth, domainCheck, err := getCertAuthAndDomainCheck(ctx)
 	if err != nil {
 		return ctx.JSONResponse(FailedWithS(err.Error(), 401), 401)
 	}
@@ -49,9 +49,9 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 	response := CheckResponse{}
 
 	// 第1步: 检查远端domain_check证书，如果无法访问直接返回报错
-	remoteExpiry, remoteErr := cert.GetRemoteCertExpiry(certConfig.DomainCheck)
+	remoteExpiry, remoteErr := cert.GetRemoteCertExpiry(domainCheck)
 	if remoteErr != nil {
-		slog.Error("failed to check remote certificate", "alias", certAlias, "error", remoteErr)
+		slog.Error("failed to check remote certificate", "alias", certAlias, "domain_check", domainCheck, "error", remoteErr)
 		return ctx.JSONResponse(FailedWithS(fmt.Sprintf("failed to check remote certificate: %v", remoteErr), 500), 500)
 	}
 	response.RemoteExpiry = remoteExpiry.Format(time.RFC3339)
@@ -285,6 +285,25 @@ func getCertAuth(ctx *atreugo.RequestCtx) (string, string, error) {
 	}
 
 	return certAlias, certAuth, nil
+}
+
+func getCertAuthAndDomainCheck(ctx *atreugo.RequestCtx) (string, string, string, error) {
+	certAlias := ctx.UserValue("alias").(string)
+	if certAlias == "" {
+		return "", "", "", errors.New("cert alias is required")
+	}
+
+	certAuth := string(ctx.QueryArgs().Peek("auth"))
+	if certAuth == "" {
+		return "", "", "", errors.New("cert auth is required")
+	}
+
+	domainCheck := string(ctx.QueryArgs().Peek("domain_check"))
+	if domainCheck == "" {
+		return "", "", "", errors.New("domain_check is required")
+	}
+
+	return certAlias, certAuth, domainCheck, nil
 }
 
 // uploadPageHTML contains the static HTML for certificate upload page

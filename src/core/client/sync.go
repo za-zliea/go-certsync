@@ -84,7 +84,7 @@ func Check() (*CheckResponse, error) {
 		serverURL += "/"
 	}
 
-	checkURL := fmt.Sprintf("%sapi/%s/check?auth=%s", serverURL, MetaData.CertAlias, MetaData.CertAuth)
+	checkURL := fmt.Sprintf("%sapi/%s/check?auth=%s&domain_check=%s", serverURL, MetaData.CertAlias, MetaData.CertAuth, url.QueryEscape(MetaData.DomainCheck))
 
 	body, err := client.doGet(checkURL, MetaData.Token)
 	if err != nil {
