@@ -147,7 +147,6 @@ certs:
     domain_cn:                          # Subject Alternative Names
       - example.com
       - www.example.com
-    domain_check: https://example.com   # URL to check current certificate
     provider: TENCENT                   # DNS provider (TENCENT/ALIYUN/GODADDY/GOOGLE/CLOUDFLARE)
     ak: your-access-key                 # Access Key ID
     sk: your-access-key-secret          # Access Key Secret
@@ -169,17 +168,28 @@ server: https://certsync.example.com    # Server URL
 token: your-server-token-abcde12345     # Server auth token
 cert_alias: example.com                 # Certificate alias
 cert_auth: your-cert-auth-token         # Certificate auth token
+domain_check: https://example.com       # URL to check remote certificate expiry
 cert_update_dir: /etc/nginx/ssl/example.com  # Directory to store certificates
 cert_update_cmd: nginx -s reload        # Command to run after certificate update
 interval: 86400                         # Check interval in seconds (default: 86400 = 24 hours)
 ```
+
+### Domain Check Configuration
+
+The `domain_check` field in the client config specifies the URL used to check the remote certificate's expiry date. This URL is passed to the server during the check request, allowing the server to compare the remote certificate (the one currently serving on your domain) with the local certificate stored on the server.
+
+**How it works:**
+1. Client sends a check request with `domain_check` URL to the server
+2. Server fetches the remote certificate from the `domain_check` URL
+3. Server compares remote certificate expiry with local certificate expiry
+4. If remote expires before local, client needs to update (newer certificate available on server)
 
 ## API
 
 ### Check Certificate
 
 ```
-GET /api/{alias}/check?auth={cert_auth}
+GET /api/{alias}/check?auth={cert_auth}&domain_check={domain_url}
 Authorization: {server_token}
 ```
 
