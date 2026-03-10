@@ -85,6 +85,7 @@ func main() {
 	server.CertStorage = certStorage
 
 	scheduler := server.NewScheduler(&serverConfig, certStorage)
+	server.GlobalScheduler = scheduler
 	scheduler.Start()
 
 	address := fmt.Sprintf("%s:%d", serverConfig.Address, serverConfig.Port)

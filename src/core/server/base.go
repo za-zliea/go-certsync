@@ -5,6 +5,13 @@ const (
 	ERROR
 )
 
+const (
+	CERT_NONE          = -2 //证书不支持更新
+	CERT_RENEW_FAILED  = -1 //证书成功失败
+	CERT_VALID         = 0  //证书有效
+	CERT_RENEW_SUCCESS = 1  //证书成功更新
+)
+
 type ResponseDTO struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`

@@ -14,6 +14,7 @@ import (
 
 var MetaData *meta.ServerConfig
 var CertStorage *cert.CertStorage
+var GlobalScheduler *Scheduler
 
 type CheckResponse struct {
 	NeedUpdate   bool   `json:"need_update"`
@@ -47,28 +48,45 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 
 	response := CheckResponse{}
 
+	// 第1步: 检查远端domain_check证书，如果无法访问直接返回报错
+	remoteExpiry, remoteErr := cert.GetRemoteCertExpiry(certConfig.DomainCheck)
+	if remoteErr != nil {
+		slog.Error("failed to check remote certificate", "alias", certAlias, "error", remoteErr)
+		return ctx.JSONResponse(FailedWithS(fmt.Sprintf("failed to check remote certificate: %v", remoteErr), 500), 500)
+	}
+	response.RemoteExpiry = remoteExpiry.Format(time.RFC3339)
+
+	// 第2步: 检查本地是否有证书
 	localExpiry, localErr := cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
+	if localErr != nil {
+		// 没有本地证书，执行一次更新证书的逻辑
+		slog.Info("no local cert found, attempting to renew", "alias", certAlias)
+
+		status := GlobalScheduler.CheckAndRenewCertStatus(certConfig)
+
+		// 如果操作状态为CERT_RENEW_FAILED直接返回报错
+		if status == CERT_RENEW_FAILED {
+			return ctx.JSONResponse(FailedWithS("certificate renewal failed", 500), 500)
+		}
+
+		// 如果操作状态为CERT_RENEW_SUCCESS，重新检查本地是否有证书
+		if status == CERT_RENEW_SUCCESS {
+			localExpiry, localErr = cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
+		}
+	}
+
 	if localErr == nil {
 		response.LocalExpiry = localExpiry.Format(time.RFC3339)
 	}
 
-	remoteExpiry, remoteErr := cert.GetRemoteCertExpiry(certConfig.DomainCheck)
-	if remoteErr == nil {
-		response.RemoteExpiry = remoteExpiry.Format(time.RFC3339)
-	}
-
+	// 第3步: 如果还是没有证书，则返回need_update=false
 	if localErr != nil {
-		response.NeedUpdate = true
-		response.Reason = "local certificate not found"
+		response.NeedUpdate = false
+		response.Reason = "no local certificate available"
 		return ctx.JSONResponse(SuccessWithD(response))
 	}
 
-	if remoteErr != nil {
-		response.NeedUpdate = true
-		response.Reason = fmt.Sprintf("failed to check remote certificate: %v", remoteErr)
-		return ctx.JSONResponse(SuccessWithD(response))
-	}
-
+	// 第4步: 如果有证书，判断远端是否早于本地证书
 	if remoteExpiry.Before(localExpiry) {
 		response.NeedUpdate = true
 		response.Reason = "remote certificate expires before local"

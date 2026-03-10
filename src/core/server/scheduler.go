@@ -74,13 +74,15 @@ func (s *Scheduler) CheckAllCerts() {
 	slog.Info("Scheduler: certificate check completed")
 }
 
-func (s *Scheduler) checkAndRenewCert(certConfig *meta.CertConfig) {
+// CheckAndRenewCertStatus 检查并尝试更新证书，返回操作状态
+// 状态值: CERT_NONE(-2), CERT_RENEW_FAILED(-1), CERT_VALID(0), CERT_RENEW_SUCCESS(1)
+func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 	alias := certConfig.Alias
 
 	// Skip auto-renewal if disabled
 	if !certConfig.AutoRenew {
 		slog.Info("Skipping certificate (auto_renew disabled)", "alias", alias)
-		return
+		return CERT_NONE
 	}
 
 	slog.Info("Checking certificate", "alias", alias)
@@ -133,12 +135,19 @@ func (s *Scheduler) checkAndRenewCert(certConfig *meta.CertConfig) {
 		slog.Info("Renewing certificate", "alias", alias, "reason", reason)
 		if err := s.CertManager.RenewCert(certConfig); err != nil {
 			slog.Error("Certificate renewal failed", "alias", alias, "error", err)
+			return CERT_RENEW_FAILED
 		} else {
 			slog.Info("Certificate renewed successfully", "alias", alias)
+			return CERT_RENEW_SUCCESS
 		}
 	} else {
 		slog.Info("Certificate no renewal needed", "alias", alias)
+		return CERT_VALID
 	}
+}
+
+func (s *Scheduler) checkAndRenewCert(certConfig *meta.CertConfig) {
+	s.CheckAndRenewCertStatus(certConfig)
 }
 
 func (s *Scheduler) parseCheckTime() string {
