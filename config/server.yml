@@ -14,3 +14,5 @@ certs:
   provider: TENCENT
   ak: your-access-key
   sk: your-access-key-secret
+  auto_renew: true
+  upload_token: your-upload-token
