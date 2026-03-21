@@ -86,6 +86,8 @@ version:
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_linux_arm64 $(OUTPUT_DIR)/certsync-client_$(VERSION)_linux_arm64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_darwin_x64 $(OUTPUT_DIR)/certsync-client_$(VERSION)_darwin_x64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_darwin_arm64 $(OUTPUT_DIR)/certsync-client_$(VERSION)_darwin_arm64; fi
+	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_linux_mips $(OUTPUT_DIR)/certsync-client_$(VERSION)_linux_mips; fi
+	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_linux_mips64 $(OUTPUT_DIR)/certsync-client_$(VERSION)_linux_mips64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_windows_x64.exe $(OUTPUT_DIR)/certsync-server_$(VERSION)_windows_x64.exe; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_windows_x86.exe $(OUTPUT_DIR)/certsync-server_$(VERSION)_windows_x86.exe; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_windows_arm64.exe $(OUTPUT_DIR)/certsync-server_$(VERSION)_windows_arm64.exe; fi
@@ -94,6 +96,8 @@ version:
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_linux_arm64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_linux_arm64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_darwin_x64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_darwin_x64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_darwin_arm64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_darwin_arm64; fi
+	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_linux_mips $(OUTPUT_DIR)/certsync-server_$(VERSION)_linux_mips; fi
+	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_linux_mips64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_linux_mips64; fi
 all: clean build-all
 release: clean build-all version
 image: clean build docker
