@@ -15,6 +15,8 @@ build-all:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-client_linux_arm64 src/client/main.go
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client_darwin_x64 src/client/main.go
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-client_darwin_arm64 src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -o $(OUTPUT_DIR)/certsync-client_linux_mips src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -o $(OUTPUT_DIR)/certsync-client_linux_mips64 src/client/main.go
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server_windows_x64.exe src/server/main.go
 	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o $(OUTPUT_DIR)/certsync-server_windows_x86.exe src/server/main.go
 	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_windows_arm64.exe src/server/main.go
@@ -23,6 +25,8 @@ build-all:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_linux_arm64 src/server/main.go
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server_darwin_x64 src/server/main.go
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_darwin_arm64 src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -o $(OUTPUT_DIR)/certsync-server_linux_mips src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -o $(OUTPUT_DIR)/certsync-server_linux_mips64 src/server/main.go
 build:
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
