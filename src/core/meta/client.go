@@ -6,6 +6,7 @@ type ClientConfig struct {
 	CertAlias     string `yaml:"cert_alias"`
 	CertAuth      string `yaml:"cert_auth"`
 	DomainCheck   string `yaml:"domain_check"`
+	LocalCheck    bool   `yaml:"local_check,omitempty"`
 	CertUpdateDir string `yaml:"cert_update_dir"`
 	CertUpdateCmd string `yaml:"cert_update_cmd"`
 	Interval      int    `yaml:"interval"`

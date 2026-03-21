@@ -23,6 +23,10 @@ type CheckResponse struct {
 	Reason       string `json:"reason"`
 }
 
+type ExpireResponse struct {
+	Expiry string `json:"expiry"`
+}
+
 func IndexHandler(ctx *atreugo.RequestCtx) error {
 	return ctx.JSONResponse(Success())
 }
@@ -158,6 +162,38 @@ func DownloadHandler(ctx *atreugo.RequestCtx) error {
 	ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.zip", certAlias))
 	ctx.Response.AppendBody(zipData)
 	return nil
+}
+
+func ExpireHandler(ctx *atreugo.RequestCtx) error {
+	if !authGlobal(ctx) {
+		return ctx.JSONResponse(FailedWithS("auth failed", 401), 401)
+	}
+
+	certAlias, certAuth, err := getCertAuth(ctx)
+	if err != nil {
+		return ctx.JSONResponse(FailedWithS(err.Error(), 401), 401)
+	}
+
+	certConfig, ok := MetaData.CertMap[certAlias]
+	if !ok {
+		return ctx.JSONResponse(FailedWithS("cert not found", 404), 404)
+	}
+
+	if certConfig.Auth != certAuth {
+		return ctx.JSONResponse(FailedWithS("cert auth failed", 401), 401)
+	}
+
+	localExpiry, err := cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
+	if err != nil {
+		slog.Error("failed to get local certificate expiry", "alias", certAlias, "error", err)
+		return ctx.JSONResponse(FailedWithS("failed to get certificate expiry: "+err.Error(), 500), 500)
+	}
+
+	response := ExpireResponse{
+		Expiry: localExpiry.Format(time.RFC3339),
+	}
+
+	return ctx.JSONResponse(SuccessWithD(response))
 }
 
 func authGlobal(ctx *atreugo.RequestCtx) bool {

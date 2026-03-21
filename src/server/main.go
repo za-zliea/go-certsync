@@ -101,6 +101,7 @@ func main() {
 	atreugoServer.GET("/h5/upload", server.UploadPageHandler)
 	atreugoServer.GET("/api/{alias}/check", server.CheckHandler)
 	atreugoServer.GET("/api/{alias}/download", server.DownloadHandler)
+	atreugoServer.GET("/api/{alias}/expire", server.ExpireHandler)
 	atreugoServer.GET("/api/{alias}/upload_verify", server.VerifyUploadTokenHandler)
 	atreugoServer.POST("/api/{alias}/upload", server.UploadHandler)
 

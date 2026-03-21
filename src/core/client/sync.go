@@ -27,6 +27,10 @@ type CheckResponse struct {
 	Reason       string `json:"reason"`
 }
 
+type ExpireResponse struct {
+	Expiry string `json:"expiry"`
+}
+
 type httpClient struct {
 	client *http.Client
 }
@@ -113,6 +117,75 @@ func Check() (*CheckResponse, error) {
 	return &checkResponse, nil
 }
 
+func GetServerExpire() (*ExpireResponse, error) {
+	client := newHTTPClient()
+
+	serverURL := MetaData.Server
+	if !strings.HasSuffix(serverURL, "/") {
+		serverURL += "/"
+	}
+
+	expireURL := fmt.Sprintf("%sapi/%s/expire?auth=%s", serverURL, MetaData.CertAlias, MetaData.CertAuth)
+
+	body, err := client.doGet(expireURL, MetaData.Token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call expire API: %v", err)
+	}
+
+	var response ResponseDTO
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	if !response.IsSuccess() {
+		return nil, errors.New(response.Message)
+	}
+
+	dataBytes, err := json.Marshal(response.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal data: %v", err)
+	}
+
+	var expireResponse ExpireResponse
+	if err := json.Unmarshal(dataBytes, &expireResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse expire response: %v", err)
+	}
+
+	return &expireResponse, nil
+}
+
+func CheckLocal() (*CheckResponse, error) {
+	serverExpire, err := GetServerExpire()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get server expire: %v", err)
+	}
+
+	remoteExpiry, err := cert.GetRemoteCertExpiry(MetaData.DomainCheck)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check remote certificate: %v", err)
+	}
+
+	serverExpiryTime, err := time.Parse(time.RFC3339, serverExpire.Expiry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse server expiry time: %v", err)
+	}
+
+	response := &CheckResponse{
+		LocalExpiry:  serverExpire.Expiry,
+		RemoteExpiry: remoteExpiry.Format(time.RFC3339),
+	}
+
+	if remoteExpiry.Before(serverExpiryTime) {
+		response.NeedUpdate = true
+		response.Reason = "remote certificate expires before server"
+	} else {
+		response.NeedUpdate = false
+		response.Reason = "server certificate is up to date"
+	}
+
+	return response, nil
+}
+
 func Download() ([]byte, error) {
 	client := newHTTPClient()
 
@@ -142,9 +215,17 @@ func Download() ([]byte, error) {
 }
 
 func Sync() error {
-	slog.Info("Checking certificate", "alias", MetaData.CertAlias)
+	slog.Info("Checking certificate", "alias", MetaData.CertAlias, "local_check", MetaData.LocalCheck)
 
-	checkResponse, err := Check()
+	var checkResponse *CheckResponse
+	var err error
+
+	if MetaData.LocalCheck {
+		checkResponse, err = CheckLocal()
+	} else {
+		checkResponse, err = Check()
+	}
+
 	if err != nil {
 		return fmt.Errorf("check failed: %v", err)
 	}

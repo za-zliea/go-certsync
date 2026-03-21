@@ -42,6 +42,7 @@ func main() {
 			CertAlias:     "example.com",
 			CertAuth:      "your-cert-auth",
 			DomainCheck:   "example.com:443",
+			LocalCheck:    false,
 			CertUpdateDir: "/etc/nginx/ssl/example.com",
 			CertUpdateCmd: "nginx -s reload",
 			Interval:      86400,
