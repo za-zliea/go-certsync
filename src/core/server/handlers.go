@@ -53,6 +53,7 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 	response := CheckResponse{}
 
 	// 第1步: 检查远端domain_check证书，如果无法访问直接返回报错
+	var remoteExpiry time.Time
 	remoteExpiry, remoteErr := cert.GetRemoteCertExpiry(domainCheck)
 	if remoteErr != nil {
 		slog.Error("failed to check remote certificate", "alias", certAlias, "domain_check", domainCheck, "error", remoteErr)
@@ -62,22 +63,6 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 
 	// 第2步: 检查本地是否有证书
 	localExpiry, localErr := cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
-	if localErr != nil {
-		// 没有本地证书，执行一次更新证书的逻辑
-		slog.Info("no local cert found, attempting to renew", "alias", certAlias)
-
-		status := GlobalScheduler.CheckAndRenewCertStatus(certConfig)
-
-		// 如果操作状态为CERT_RENEW_FAILED直接返回报错
-		if status == CERT_RENEW_FAILED {
-			return ctx.JSONResponse(FailedWithS("certificate renewal failed", 500), 500)
-		}
-
-		// 如果操作状态为CERT_RENEW_SUCCESS，重新检查本地是否有证书
-		if status == CERT_RENEW_SUCCESS {
-			localExpiry, localErr = cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
-		}
-	}
 
 	if localErr == nil {
 		response.LocalExpiry = localExpiry.Format(time.RFC3339)
@@ -91,7 +76,7 @@ func CheckHandler(ctx *atreugo.RequestCtx) error {
 	}
 
 	// 第4步: 如果有证书，判断远端是否早于本地证书
-	if remoteExpiry.Before(localExpiry) {
+	if !remoteExpiry.IsZero() && remoteExpiry.Before(localExpiry) {
 		response.NeedUpdate = true
 		response.Reason = "remote certificate expires before local"
 	} else {

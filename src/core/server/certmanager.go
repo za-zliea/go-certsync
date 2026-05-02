@@ -85,6 +85,12 @@ func (cm *CertManager) RenewCert(certConfig *meta.CertConfig) error {
 		return errors.New("email is required")
 	}
 
+	// Disable CNAME support for DNS-01 challenge
+	if certConfig.DisableCname == nil || *certConfig.DisableCname {
+		os.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
+		defer os.Unsetenv("LEGO_DISABLE_CNAME_SUPPORT")
+	}
+
 	// Reset sync.Once for this certificate request
 	cm.preCheckOnce = sync.Once{}
 

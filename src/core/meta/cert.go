@@ -12,4 +12,5 @@ type CertConfig struct {
 	AccessKeySecret string   `yaml:"sk"`
 	AutoRenew       bool     `yaml:"auto_renew"`
 	UploadToken     string   `yaml:"upload_token"`
+	DisableCname    *bool    `yaml:"disable_cname"`
 }

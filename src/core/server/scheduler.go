@@ -102,13 +102,15 @@ func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 	var remoteExpiry time.Time
 	var hasRemoteCert bool
 
-	remoteExpiry, err = cert.GetRemoteCertExpiry(certConfig.DomainCheck)
-	if err == nil {
-		hasRemoteCert = true
-		slog.Info("Certificate remote expiry", "alias", alias, "expiry", remoteExpiry)
-	} else {
-		hasRemoteCert = false
-		slog.Warn("Failed to check remote cert", "alias", alias, "error", err)
+	if certConfig.DomainCheck != "" {
+		remoteExpiry, err = cert.GetRemoteCertExpiry(certConfig.DomainCheck)
+		if err == nil {
+			hasRemoteCert = true
+			slog.Info("Certificate remote expiry", "alias", alias, "expiry", remoteExpiry)
+		} else {
+			hasRemoteCert = false
+			slog.Warn("Failed to check remote cert", "alias", alias, "error", err)
+		}
 	}
 
 	shouldRenew := false
