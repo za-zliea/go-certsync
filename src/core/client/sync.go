@@ -117,7 +117,7 @@ func Check() (*CheckResponse, error) {
 	return &checkResponse, nil
 }
 
-func GetServerExpire() (*ExpireResponse, error) {
+func GetServerExpire(remoteExpire *time.Time) (*ExpireResponse, error) {
 	client := newHTTPClient()
 
 	serverURL := MetaData.Server
@@ -125,7 +125,7 @@ func GetServerExpire() (*ExpireResponse, error) {
 		serverURL += "/"
 	}
 
-	expireURL := fmt.Sprintf("%sapi/%s/expire?auth=%s", serverURL, MetaData.CertAlias, MetaData.CertAuth)
+	expireURL := fmt.Sprintf("%sapi/%s/expire?auth=%s&remoteExpire=%s", serverURL, MetaData.CertAlias, MetaData.CertAuth, remoteExpire.Format(time.RFC3339))
 
 	body, err := client.doGet(expireURL, MetaData.Token)
 	if err != nil {
@@ -155,14 +155,14 @@ func GetServerExpire() (*ExpireResponse, error) {
 }
 
 func CheckLocal() (*CheckResponse, error) {
-	serverExpire, err := GetServerExpire()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get server expire: %v", err)
-	}
-
 	remoteExpiry, err := cert.GetRemoteCertExpiry(MetaData.DomainCheck)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check remote certificate: %v", err)
+	}
+
+	serverExpire, err := GetServerExpire(&remoteExpiry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get server expire: %v", err)
 	}
 
 	serverExpiryTime, err := time.Parse(time.RFC3339, serverExpire.Expiry)

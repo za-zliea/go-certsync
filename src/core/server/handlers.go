@@ -170,6 +170,26 @@ func ExpireHandler(ctx *atreugo.RequestCtx) error {
 
 	localExpiry, err := cert.GetLocalCertExpiry(CertStorage.GetFullchainPath(certAlias))
 	if err != nil {
+		var remoteExpiry time.Time
+		_remoteExpire := string(ctx.QueryArgs().Peek("remoteExpire"))
+		if _remoteExpire != "" {
+			remoteExpiry, err = time.Parse(time.RFC3339, _remoteExpire)
+
+			if err != nil {
+				slog.Error("failed to parse remote expiry", "error", err)
+				return ctx.JSONResponse(Failed("failed to parse remote expiry"))
+			}
+
+		}
+
+		if cert.NeedsRenewal(remoteExpiry, 10) {
+			go func(cfg *meta.CertConfig) {
+				slog.Info("async renewal triggered by expire check", "alias", cfg.Alias)
+				status := GlobalScheduler.CheckAndRenewCertStatus(cfg)
+				slog.Info("async renewal completed", "alias", cfg.Alias, "status", status)
+			}(certConfig)
+		}
+
 		slog.Error("failed to get local certificate expiry", "alias", certAlias, "error", err)
 		return ctx.JSONResponse(FailedWithS("failed to get certificate expiry: "+err.Error(), 500), 500)
 	}
