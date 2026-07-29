@@ -4,6 +4,9 @@ token: your-auth-token
 storage: your-cert-storage
 cert_check_time: "03:00:00"
 dns: dns-server
+admin:
+  username: your-admin-username
+  password: bcrypt(your-admin-password)
 certs:
 - alias: example.com
   auth: your-cert-auth
