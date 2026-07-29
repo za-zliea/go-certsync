@@ -2,36 +2,41 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 OUTPUT_DIR := $(MKFILE_DIR)output
 
+BUILD_TIME    := $(shell date +%Y%m%d%H%M%S)
+GIT_COMMIT    := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_VERSION := $(BUILD_TIME)-$(GIT_COMMIT)
+LDFLAGS       := -X certsync/src/core/version.Version=$(BUILD_VERSION)
+
 .PHONY: build-all build docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push install uninstall
 
 build-all:
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client_windows_x64.exe src/client/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o $(OUTPUT_DIR)/certsync-client_windows_x86.exe src/client/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-client_windows_arm64.exe src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client_linux_x64 src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(OUTPUT_DIR)/certsync-client_linux_x86 src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-client_linux_arm64 src/client/main.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client_darwin_x64 src/client/main.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-client_darwin_arm64 src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -o $(OUTPUT_DIR)/certsync-client_linux_mips src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -o $(OUTPUT_DIR)/certsync-client_linux_mips64 src/client/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server_windows_x64.exe src/server/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o $(OUTPUT_DIR)/certsync-server_windows_x86.exe src/server/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_windows_arm64.exe src/server/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server_linux_x64 src/server/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(OUTPUT_DIR)/certsync-server_linux_x86 src/server/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_linux_arm64 src/server/main.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server_darwin_x64 src/server/main.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o $(OUTPUT_DIR)/certsync-server_darwin_arm64 src/server/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -o $(OUTPUT_DIR)/certsync-server_linux_mips src/server/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -o $(OUTPUT_DIR)/certsync-server_linux_mips64 src/server/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_windows_x64.exe src/client/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_windows_x86.exe src/client/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_windows_arm64.exe src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_linux_x64 src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_linux_x86 src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_linux_arm64 src/client/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_darwin_x64 src/client/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_darwin_arm64 src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_linux_mips src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_linux_mips64 src/client/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_windows_x64.exe src/server/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_windows_x86.exe src/server/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_windows_arm64.exe src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_x64 src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_x86 src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_arm64 src/server/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_darwin_x64 src/server/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_darwin_arm64 src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_mips src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_mips64 src/server/main.go
 build:
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-client src/client/main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(OUTPUT_DIR)/certsync-server src/server/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client src/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server src/server/main.go
 docker:
 	docker pull ubuntu:focal
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-ubuntu -f docker/Dockerfile-Client .; fi

@@ -4,7 +4,9 @@ go 1.25.0
 
 require (
 	github.com/go-acme/lego/v4 v4.35.2
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/savsgio/atreugo/v11 v11.13.2
+	golang.org/x/crypto v0.50.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -48,7 +50,6 @@ require (
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

@@ -4,6 +4,7 @@ import (
 	"certsync/src/core/client"
 	"certsync/src/core/config"
 	"certsync/src/core/meta"
+	"certsync/src/core/version"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -17,18 +18,25 @@ var (
 	configFileClient     string
 	generateConfigClient bool
 	printUsageClient     bool
+	printVersionClient   bool
 )
 
 func init() {
 	flag.StringVar(&configFileClient, "c", "client.conf", "config file path, default client.conf")
 	flag.BoolVar(&generateConfigClient, "g", false, "generate config, default client.conf")
 	flag.BoolVar(&printUsageClient, "h", false, "print usage")
+	flag.BoolVar(&printVersionClient, "v", false, "print version and exit")
 
 	flag.Usage = clientUsage
 }
 
 func main() {
 	flag.Parse()
+
+	if printVersionClient {
+		fmt.Println(version.Version)
+		os.Exit(0)
+	}
 
 	if printUsageClient {
 		clientUsage()
@@ -71,7 +79,7 @@ func main() {
 	client.MetaData = &clientConfig
 
 	interval := time.Duration(clientConfig.Interval) * time.Second
-	slog.Info("starting client", "interval", interval)
+	slog.Info("starting client", "interval", interval, "version", version.Version)
 
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
