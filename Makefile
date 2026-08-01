@@ -62,7 +62,7 @@ build: frontend-build
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server src/server/main.go
 
 docker:
-	docker pull ubuntu:focal
+	docker pull ubuntu:noble
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-ubuntu -f docker/Dockerfile-Client .; fi
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION) -f docker/Dockerfile-Client .; fi
 	docker build -t zliea/certsync-client:ubuntu -f docker/Dockerfile-Client .

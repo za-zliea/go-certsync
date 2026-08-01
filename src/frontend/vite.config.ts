@@ -26,7 +26,20 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,
     target: 'es2018',
-    sourcemap: false
+    sourcemap: false,
+    // Element Plus 是全量引入的（main.ts 里的 app.use(ElementPlus)），若不拆分，
+    // 入口 chunk 会把它和 Vue/Pinia/vue-i18n 打在一起，超过 500 kB 的默认告警阈值。
+    // 这里把稳定的 vendor 依赖拆成各自可缓存的 chunk，并提高阈值，避免 Element
+    // Plus chunk 单独触发告警。
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'pinia'],
+          'element-plus': ['element-plus', '@element-plus/icons-vue']
+        }
+      }
+    }
   },
   server: {
     host: '0.0.0.0',

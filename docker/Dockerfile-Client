@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:noble
 
 ENV CONFIG_DIR=/etc/certsync
 
