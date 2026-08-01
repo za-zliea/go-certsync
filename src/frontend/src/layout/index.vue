@@ -6,6 +6,7 @@ import { Upload, Download, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import { useI18n } from 'vue-i18n'
 import LangSwitch from '@/components/LangSwitch.vue'
+import logo from '@/assets/logo.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +62,7 @@ async function handleLogout() {
   <el-container class="layout-root">
     <el-aside width="220px" class="layout-aside">
       <div class="logo">
+        <img :src="logo" alt="" class="logo-icon" />
         <span>{{ t('brand.name') }}</span>
       </div>
       <el-menu
@@ -113,11 +115,17 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   color: #ffffff;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 1px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
 }
 
 .layout-aside :deep(.el-menu) {

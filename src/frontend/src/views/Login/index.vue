@@ -6,6 +6,7 @@ import { Lock, User } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 import { useI18n } from 'vue-i18n'
 import LangSwitch from '@/components/LangSwitch.vue'
+import logo from '@/assets/logo.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,6 +54,7 @@ async function handleSubmit() {
     <LangSwitch class="login-lang" />
     <div class="login-card">
       <div class="login-header">
+        <img :src="logo" alt="" class="login-logo" />
         <h1>{{ t('brand.name') }}</h1>
         <p>{{ t('console.title') }}</p>
       </div>
@@ -130,6 +132,12 @@ async function handleSubmit() {
 .login-header {
   text-align: center;
   margin-bottom: 28px;
+}
+
+.login-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
 }
 
 .login-header h1 {
