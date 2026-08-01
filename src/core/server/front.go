@@ -33,14 +33,19 @@ type CertListItem struct {
 }
 
 // CertInfo is the parsed-certificate metadata returned by /front/api/{alias}/info.
+// Remote* 字段在 CertConfig.DomainCheck 配置且远端可达时填充；本地缺失时由远端兜底。
+// Remote* 使用指针 + omitempty，以区分 "远端不可达/未配置" 与 "epoch 0 值"。
 type CertInfo struct {
-	Alias           string     `json:"alias"`
-	CN              string     `json:"cn"`
-	DNSNames        []string   `json:"dns_names"`
-	NotBefore       time.Time  `json:"not_before"`
-	NotAfter        time.Time  `json:"not_after"`
-	DaysRemaining   int        `json:"days_remaining"`
-	ExpectedRenewAt *time.Time `json:"expected_renew_at,omitempty"`
+	Alias               string     `json:"alias"`
+	CN                  string     `json:"cn"`
+	DNSNames            []string   `json:"dns_names"`
+	NotBefore           time.Time  `json:"not_before"`
+	NotAfter            time.Time  `json:"not_after"`
+	DaysRemaining       int        `json:"days_remaining"`
+	ExpectedRenewAt     *time.Time `json:"expected_renew_at,omitempty"`
+	RemoteNotBefore     *time.Time `json:"remote_not_before,omitempty"`
+	RemoteNotAfter      *time.Time `json:"remote_not_after,omitempty"`
+	RemoteDaysRemaining *int       `json:"remote_days_remaining,omitempty"`
 }
 
 // FrontAliasListHandler returns the list of configured certificates (without secrets).
@@ -198,6 +203,10 @@ func FrontUploadHandler(ctx *atreugo.RequestCtx) error {
 }
 
 // FrontCertInfoHandler returns parsed metadata (CN, DNS names, validity window) for a certificate.
+//
+// 本地与远端证书信息相互独立：本地存在则解析填充 not_*/days_remaining；
+// CertConfig.DomainCheck 配置时拨号填充 remote_*。本地缺失时 CN/DNSNames 由远端兜底，
+// 仅当两者都拿不到才返回 404。远端不可达记 warn 后跳过，不影响响应。
 func FrontCertInfoHandler(ctx *atreugo.RequestCtx) error {
 	if _, ok := authJWT(ctx); !ok {
 		return ctx.JSONResponse(FailedWithS("auth failed", 401), 401)
@@ -213,32 +222,61 @@ func FrontCertInfoHandler(ctx *atreugo.RequestCtx) error {
 		return ctx.JSONResponse(FailedWithS("cert not found", 404), 404)
 	}
 
-	if !CertStorage.CertExists(certAlias) {
+	info := CertInfo{Alias: certAlias, DNSNames: []string{}}
+
+	// 本地证书
+	var localNotAfter time.Time
+	var hasLocal bool
+	if CertStorage.CertExists(certAlias) {
+		data, err := CertStorage.ReadFullchain(certAlias)
+		if err == nil {
+			if x, err := cert.ParseCertExpiry(data); err == nil {
+				info.CN = x.Subject.CommonName
+				info.DNSNames = x.DNSNames
+				info.NotBefore = x.NotBefore
+				info.NotAfter = x.NotAfter
+				info.DaysRemaining = int(time.Until(x.NotAfter).Hours() / 24)
+				localNotAfter = x.NotAfter
+				hasLocal = true
+			} else {
+				slog.Warn("failed to parse local certificate", "alias", certAlias, "error", err)
+			}
+		} else {
+			slog.Warn("failed to read fullchain", "alias", certAlias, "error", err)
+		}
+	}
+
+	// 远端证书
+	var remoteNotAfter time.Time
+	var hasRemote bool
+	if certConfig.DomainCheck != "" {
+		if x, err := cert.GetRemoteCert(certConfig.DomainCheck); err == nil {
+			rBefore, rAfter := x.NotBefore, x.NotAfter
+			rDays := int(time.Until(rAfter).Hours() / 24)
+			info.RemoteNotBefore = &rBefore
+			info.RemoteNotAfter = &rAfter
+			info.RemoteDaysRemaining = &rDays
+			remoteNotAfter = rAfter
+			hasRemote = true
+			if !hasLocal {
+				info.CN = x.Subject.CommonName
+				info.DNSNames = x.DNSNames
+			}
+		} else {
+			slog.Warn("failed to fetch remote certificate", "alias", certAlias,
+				"domain_check", certConfig.DomainCheck, "error", err)
+		}
+	}
+
+	if !hasLocal && !hasRemote {
 		return ctx.JSONResponse(FailedWithS("certificate files not found", 404), 404)
 	}
 
-	data, err := CertStorage.ReadFullchain(certAlias)
-	if err != nil {
-		slog.Error("failed to read fullchain", "alias", certAlias, "error", err)
-		return ctx.JSONResponse(Failed("failed to read certificate"))
+	renewAfter := localNotAfter
+	if !hasLocal {
+		renewAfter = remoteNotAfter
 	}
+	info.ExpectedRenewAt = GlobalScheduler.ExpectedRenewAt(renewAfter, certConfig.AutoRenew)
 
-	x509Cert, err := cert.ParseCertExpiry(data)
-	if err != nil {
-		slog.Error("failed to parse certificate", "alias", certAlias, "error", err)
-		return ctx.JSONResponse(Failed("failed to parse certificate"))
-	}
-
-	daysRemaining := int(time.Until(x509Cert.NotAfter).Hours() / 24)
-	expectedRenew := GlobalScheduler.ExpectedRenewAt(x509Cert.NotAfter, certConfig.AutoRenew)
-
-	return ctx.JSONResponse(SuccessWithD(CertInfo{
-		Alias:           certAlias,
-		CN:              x509Cert.Subject.CommonName,
-		DNSNames:        x509Cert.DNSNames,
-		NotBefore:       x509Cert.NotBefore,
-		NotAfter:        x509Cert.NotAfter,
-		DaysRemaining:   daysRemaining,
-		ExpectedRenewAt: expectedRenew,
-	}))
+	return ctx.JSONResponse(SuccessWithD(info))
 }

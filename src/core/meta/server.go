@@ -14,15 +14,26 @@ const (
 )
 
 type ServerConfig struct {
-	Address   string                 `yaml:"address"`
-	Port      int                    `yaml:"port"`
-	Token     string                 `yaml:"token"`
-	Storage   string                 `yaml:"storage"`
-	CheckTime string                 `yaml:"cert_check_time"`
-	DNS       string                 `yaml:"dns"`
-	Certs     []*CertConfig          `yaml:"certs"`
-	Admin     *Admin                 `yaml:"admin"`
-	CertMap   map[string]*CertConfig `yaml:"-"`
+	Address         string                 `yaml:"address"`
+	Port            int                    `yaml:"port"`
+	Token           string                 `yaml:"token"`
+	Storage         string                 `yaml:"storage"`
+	CheckTime       string                 `yaml:"cert_check_time"`
+	DNS             string                 `yaml:"dns"`
+	RenewalLeadDays int                    `yaml:"renewal_lead_days"`
+	Certs           []*CertConfig          `yaml:"certs"`
+	Admin           *Admin                 `yaml:"admin"`
+	CertMap         map[string]*CertConfig `yaml:"-"`
+}
+
+// GetRenewalLeadDays 返回续期提前天数；未配置或非法（<=0）时回退到 10。
+// 调用方：scheduler 的续期判定、ExpectedRenewAt、ExpireHandler。
+// 不向 YAML 回写默认值，避免 EnsureAdmin 路径落盘时污染配置。
+func (s *ServerConfig) GetRenewalLeadDays() int {
+	if s.RenewalLeadDays > 0 {
+		return s.RenewalLeadDays
+	}
+	return 10
 }
 
 type Admin struct {

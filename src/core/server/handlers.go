@@ -182,7 +182,7 @@ func ExpireHandler(ctx *atreugo.RequestCtx) error {
 
 		}
 
-		if cert.NeedsRenewal(remoteExpiry, 10) {
+		if cert.NeedsRenewal(remoteExpiry, MetaData.GetRenewalLeadDays()) {
 			go func(cfg *meta.CertConfig) {
 				slog.Info("async renewal triggered by expire check", "alias", cfg.Alias)
 				status := GlobalScheduler.CheckAndRenewCertStatus(cfg)

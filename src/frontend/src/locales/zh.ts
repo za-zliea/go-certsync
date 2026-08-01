@@ -92,6 +92,9 @@ export default {
         daysRemaining: '剩余天数',
         expired: '已过期',
         expectedRenewAt: '预计更新时间',
+        remoteNotBefore: '远端/生效时间',
+        remoteNotAfter: '远端/过期时间',
+        remoteDaysRemaining: '远端/剩余天数',
         empty: '暂无数据'
       }
     }

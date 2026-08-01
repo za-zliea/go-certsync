@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// RenewalLeadDays 与 scheduler 续期判定中传给 cert.NeedsRenewal 的阈值保持同步。
-// 修改这里时请同步检查 scheduler.go 内 NeedsRenewal(expiry, RenewalLeadDays) 的调用。
-const RenewalLeadDays = 10
+// DefaultRenewalLeadDays 是续期提前天数的默认值；运行期真值由
+// ServerConfig.GetRenewalLeadDays() 返回（可被 renewal_lead_days 配置覆盖）。
+const DefaultRenewalLeadDays = 10
 
 type Scheduler struct {
 	Config      *meta.ServerConfig
@@ -122,7 +122,7 @@ func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 
 	if !hasLocalCert {
 		if hasRemoteCert {
-			if cert.NeedsRenewal(remoteExpiry, RenewalLeadDays) {
+			if cert.NeedsRenewal(remoteExpiry, s.Config.GetRenewalLeadDays()) {
 				shouldRenew = true
 				reason = "no local cert and remote cert expiring soon"
 			}
@@ -131,7 +131,7 @@ func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 			reason = "no local cert available"
 		}
 	} else {
-		if cert.NeedsRenewal(localExpiry, RenewalLeadDays) {
+		if cert.NeedsRenewal(localExpiry, s.Config.GetRenewalLeadDays()) {
 			shouldRenew = true
 			reason = "local cert expiring within 10 days"
 		}
@@ -206,7 +206,7 @@ func (s *Scheduler) ExpectedRenewAt(notAfter time.Time, autoRenew bool) *time.Ti
 	if !autoRenew {
 		return nil
 	}
-	threshold := notAfter.Add(-time.Duration(RenewalLeadDays) * 24 * time.Hour)
+	threshold := notAfter.Add(-time.Duration(s.Config.GetRenewalLeadDays()) * 24 * time.Hour)
 	now := time.Now()
 	start := threshold
 	if start.Before(now) {

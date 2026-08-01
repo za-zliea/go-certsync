@@ -46,12 +46,13 @@ func main() {
 
 	if generateConfigServer {
 		metaData := meta.ServerConfig{
-			Address:   "0.0.0.0",
-			Port:      8080,
-			Token:     "your-auth-token",
-			Storage:   "/var/lib/certsync",
-			CheckTime: "03:00:00",
-			DNS:       "dns-server",
+			Address:         "0.0.0.0",
+			Port:            8080,
+			Token:           "your-auth-token",
+			Storage:         "/var/lib/certsync",
+			CheckTime:       "03:00:00",
+			DNS:             "dns-server",
+			RenewalLeadDays: 10,
 		}
 		metaData.Certs = []*meta.CertConfig{
 			{

@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-func GetRemoteCertExpiry(domainCheck string) (time.Time, error) {
+// GetRemoteCert 通过 TLS 拨号到 domain_check（host[:port]，默认 443）并返回对端证书。
+func GetRemoteCert(domainCheck string) (*x509.Certificate, error) {
 	parts := strings.Split(domainCheck, ":")
 	host := parts[0]
 	port := "443"
@@ -23,16 +24,24 @@ func GetRemoteCertExpiry(domainCheck string) (time.Time, error) {
 		InsecureSkipVerify: true,
 	})
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to connect to %s: %v", domainCheck, err)
+		return nil, fmt.Errorf("failed to connect to %s: %v", domainCheck, err)
 	}
 	defer conn.Close()
 
 	certs := conn.ConnectionState().PeerCertificates
 	if len(certs) == 0 {
-		return time.Time{}, errors.New("no certificates found")
+		return nil, errors.New("no certificates found")
 	}
+	return certs[0], nil
+}
 
-	return certs[0].NotAfter, nil
+// GetRemoteCertExpiry 保留原签名以兼容现有调用方（scheduler / CheckHandler）。
+func GetRemoteCertExpiry(domainCheck string) (time.Time, error) {
+	c, err := GetRemoteCert(domainCheck)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return c.NotAfter, nil
 }
 
 func GetLocalCertExpiry(fullchainPath string) (time.Time, error) {

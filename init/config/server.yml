@@ -3,6 +3,7 @@ port: 8081
 token: your-auth-token
 storage: /var/lib/certsync
 cert_check_time: "03:00:00"
+renewal_lead_days: 10
 dns: dns-server
 admin:
   username: your-admin-username

@@ -92,6 +92,9 @@ export default {
         daysRemaining: 'Days remaining',
         expired: 'Expired',
         expectedRenewAt: 'Expected renewal',
+        remoteNotBefore: 'Remote / Valid from',
+        remoteNotAfter: 'Remote / Expires',
+        remoteDaysRemaining: 'Remote / Days remaining',
         empty: 'No data'
       }
     }

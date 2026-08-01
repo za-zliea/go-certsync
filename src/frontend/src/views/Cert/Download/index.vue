@@ -52,9 +52,29 @@ function formatTime(rfc3339: string): string {
   if (!rfc3339) return '-'
   const d = new Date(rfc3339)
   if (Number.isNaN(d.getTime())) return rfc3339
+  if (d.getUTCFullYear() <= 1) return '-' // Go time.Time zero value (local cert missing)
   // Use locale-aware formatting (YYYY-MM-DD HH:mm:ss in zh-CN).
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+// Local cert missing signal: when absent, backend returns
+// not_after=0001-01-01T00:00:00Z and days_remaining=0.
+function isLocalMissing(info: CertInfo): boolean {
+  if (!info.not_after) return true
+  const d = new Date(info.not_after)
+  return !Number.isNaN(d.getTime()) && d.getUTCFullYear() <= 1
+}
+
+// Date-only formatting for `expected_renew_at` (the scheduler's next renewal
+// tick; time-of-day is an implementation detail users don't need).
+function formatDate(rfc3339: string): string {
+  if (!rfc3339) return '-'
+  const d = new Date(rfc3339)
+  if (Number.isNaN(d.getTime())) return rfc3339
+  if (d.getUTCFullYear() <= 1) return '-'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 async function handleDetail(row: CertListItem) {
@@ -146,7 +166,7 @@ onMounted(fetchList)
           </template>
         </el-table-column>
         <el-table-column :label="t('cert.download.columnExpectedRenewAt')" min-width="180">
-          <template #default="{ row }">{{ formatTime(row.expected_renew_at) }}</template>
+          <template #default="{ row }">{{ formatDate(row.expected_renew_at) }}</template>
         </el-table-column>
         <el-table-column :label="t('cert.download.columnOperation')" width="180" fixed="right">
           <template #default="{ row }">
@@ -208,15 +228,31 @@ onMounted(fetchList)
             {{ formatTime(detail.not_after) }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('cert.download.detail.daysRemaining')">
+            <template v-if="isLocalMissing(detail)">
+              -
+            </template>
             <el-tag
-              v-if="detail.days_remaining < 0"
+              v-else-if="detail.days_remaining < 0"
               type="danger"
               effect="dark"
             >{{ t('cert.download.detail.expired') }}</el-tag>
             <span v-else>{{ detail.days_remaining }}</span>
           </el-descriptions-item>
           <el-descriptions-item :label="t('cert.download.detail.expectedRenewAt')">
-            {{ detail.expected_renew_at ? formatTime(detail.expected_renew_at) : '-' }}
+            {{ detail.expected_renew_at ? formatDate(detail.expected_renew_at) : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.remoteNotBefore')">
+            {{ detail.remote_not_before ? formatTime(detail.remote_not_before) : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.remoteNotAfter')">
+            {{ detail.remote_not_after ? formatTime(detail.remote_not_after) : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.remoteDaysRemaining')">
+            <template v-if="detail.remote_days_remaining == null">-</template>
+            <el-tag v-else-if="detail.remote_days_remaining < 0" type="danger" effect="dark">
+              {{ t('cert.download.detail.expired') }}
+            </el-tag>
+            <span v-else>{{ detail.remote_days_remaining }}</span>
           </el-descriptions-item>
         </el-descriptions>
         <el-empty

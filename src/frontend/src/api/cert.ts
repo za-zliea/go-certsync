@@ -21,7 +21,10 @@ export interface CertListItem {
 }
 
 // Matches src/core/server/front.go CertInfo.
-// `not_before` / `not_after` are RFC3339 time strings.
+// `not_before` / `not_after` are RFC3339 time strings. When the local cert is
+// missing, the backend still emits `not_before` / `not_after` as Go's
+// `0001-01-01T00:00:00Z` zero value (rendered as `-` by formatTime); the
+// `cn` / `dns_names` fields are then backfilled from the remote cert.
 export interface CertInfo {
   alias: string
   cn: string
@@ -30,6 +33,11 @@ export interface CertInfo {
   not_after: string
   days_remaining: number
   expected_renew_at: string | null
+  // Remote cert info. Present only when CertConfig.DomainCheck is configured
+  // AND the TLS dial succeeds; undefined otherwise → render as '-'.
+  remote_not_before?: string
+  remote_not_after?: string
+  remote_days_remaining?: number
 }
 
 // GET /front/api/list → CertListItem[]
