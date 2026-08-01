@@ -60,7 +60,7 @@ func main() {
 				Auth:            "your-cert-auth",
 				Email:           "your-cert-email",
 				Domain:          "example.com",
-				DomainCheck:     "https://example.com",
+				DomainCheck:     "example.com:443",
 				Provider:        "TENCENT",
 				AccessKey:       "your-access-key",
 				AccessKeySecret: "your-access-key-secret",

@@ -14,7 +14,7 @@ certs:
   email: your-cert-email
   domain: example.com
   domain_cn: []
-  domain_check: https://example.com
+  domain_check: example.com:443
   provider: TENCENT
   ak: your-access-key
   sk: your-access-key-secret

@@ -151,11 +151,6 @@ the target service.
 
 ## Systemd (Linux)
 
-> Note: the `make install` target is currently out of sync with the repo layout — it
-> references `systemd/certsync-*.service`, but those units now live at
-> `init/autostart/systemd/`. Use the manual steps below, or adjust the Makefile paths
-> before running `make install`.
-
 ```shell
 # Build
 make build
@@ -202,6 +197,7 @@ port: 8080                              # Listen port
 token: your-server-token-abcde12345     # Client/API auth token (also HMAC key for admin JWTs)
 storage: /var/lib/certsync              # Certificate storage directory
 cert_check_time: "03:00:00"             # Daily certificate check time (HH:MM:SS)
+renewal_lead_days: 10                   # Renew this many days before expiry (optional, default 10)
 dns: 8.8.8.8                            # DNS server for propagation check (optional)
 admin:                                  # Admin account for the web UI (auto-generated if omitted)
   username: admin
