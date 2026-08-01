@@ -138,7 +138,7 @@ func main() {
 	atreugoServer.GET("/front/api/list", server.FrontAliasListHandler)
 	atreugoServer.GET("/front/api/{alias}/download", server.FrontDownloadHandler)
 	atreugoServer.POST("/front/api/{alias}/upload", server.FrontUploadHandler)
-	atreugoServer.POST("/front/api/{alias}/info", server.FrontCertInfoHandler)
+	atreugoServer.GET("/front/api/{alias}/info", server.FrontCertInfoHandler)
 	atreugoServer.GET("/api/{alias}/check", server.CheckHandler)
 	atreugoServer.GET("/api/{alias}/download", server.DownloadHandler)
 	atreugoServer.GET("/api/{alias}/expire", server.ExpireHandler)
