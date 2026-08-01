@@ -22,8 +22,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFileClient, "c", "client.conf", "config file path, default client.conf")
-	flag.BoolVar(&generateConfigClient, "g", false, "generate config, default client.conf")
+	flag.StringVar(&configFileClient, "c", "client.yml", "config file path, default client.yml")
+	flag.BoolVar(&generateConfigClient, "g", false, "generate config, default client.yml")
 	flag.BoolVar(&printUsageClient, "h", false, "print usage")
 	flag.BoolVar(&printVersionClient, "v", false, "print version and exit")
 

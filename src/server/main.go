@@ -23,8 +23,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFileServer, "c", "server.conf", "config file path, default server.conf")
-	flag.BoolVar(&generateConfigServer, "g", false, "generate config, default server.conf")
+	flag.StringVar(&configFileServer, "c", "server.yml", "config file path, default server.yml")
+	flag.BoolVar(&generateConfigServer, "g", false, "generate config, default server.yml")
 	flag.BoolVar(&printUsageServer, "h", false, "print usage")
 	flag.BoolVar(&printVersionServer, "v", false, "print version and exit")
 
