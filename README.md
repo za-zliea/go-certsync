@@ -220,7 +220,7 @@ certs:
     sk: your-access-key-secret          # Access Key Secret
     auto_renew: true                    # Enable automatic renewal via Let's Encrypt
     disable_cname: false                # Optional: disable CNAME support during ACME DNS-01
-    upload_token: your-upload-token     # Legacy upload token (unused by /front/* JWT flow)
+    upload_token: your-upload-token     # Legacy upload token (unused by /front/api/* JWT flow)
 ```
 
 On first run, if `admin` is absent or empty the server generates a random 16-character
@@ -272,8 +272,8 @@ whether to renew when no local cert exists.
 ## API
 
 All `/api/*` endpoints are used by clients and require `Authorization: {server_token}` plus
-`?auth={cert_auth}`. The `/front/*` and `/pub/login` endpoints back the admin web UI and use
-JWT bearer auth (`Authorization: Bearer <jwt>`).
+`?auth={cert_auth}`. The `/front/api/*` and `/front/pub/login` endpoints back the admin web UI
+and use JWT bearer auth (`Authorization: Bearer <jwt>`).
 
 ### Check Certificate (client, `local_check: false`)
 
@@ -319,7 +319,7 @@ Response: ZIP file containing `cert.pem`, `chain.pem`, `fullchain.pem`, and `pri
 ### Admin Login
 
 ```
-POST /pub/login
+POST /front/pub/login
 Content-Type: application/json
 
 {"username": "admin", "password": "..."}
@@ -339,17 +339,40 @@ The JWT is HS256-signed with the server `token` as the HMAC key and is valid for
 ### List Certificates (admin)
 
 ```
-GET /front/list
+GET /front/api/list
 Authorization: Bearer <jwt>
 ```
 
 Returns all configured certificates with secrets (`ak`, `sk`, `auth`, `upload_token`) stripped.
 
+### Certificate Info (admin)
+
+```
+GET /front/api/{alias}/info
+Authorization: Bearer <jwt>
+```
+
+Returns parsed metadata of the stored certificate:
+
+```json
+{
+  "code": 0,
+  "message": "SUCCESS",
+  "data": {
+    "alias": "example.com",
+    "cn": "example.com",
+    "dns_names": ["example.com", "www.example.com"],
+    "not_before": "2024-01-01T00:00:00Z",
+    "not_after": "2024-04-01T00:00:00Z"
+  }
+}
+```
+
 ### Download / Upload via Web UI (admin)
 
 ```
-GET  /front/{alias}/download          # ZIP download, same format as client API
-POST /front/{alias}/upload            # multipart: fullchain + privkey (auto_renew: false only)
+GET   /front/api/{alias}/download     # ZIP download, same format as client API
+POST  /front/api/{alias}/upload       # multipart: fullchain + privkey (auto_renew: false only)
 Authorization: Bearer <jwt>
 ```
 

@@ -133,3 +133,8 @@ node_modules/
 dist/
 dist-*/
 
+# Embedded admin SPA build output (consumed by src/frontend/embed.go).
+# The generic `dist/` rule above already matches this path, but listing it
+# explicitly documents the intent.
+src/frontend/dist/
+

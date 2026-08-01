@@ -7,9 +7,31 @@ GIT_COMMIT    := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_VERSION := $(BUILD_TIME)-$(GIT_COMMIT)
 LDFLAGS       := -X certsync/src/core/version.Version=$(BUILD_VERSION)
 
-.PHONY: build-all build docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push install uninstall
+.PHONY: build-all build frontend-build frontend-clean docker docker-alpine push push-alpine clean version all release image image-push image-alpine image-alpine-push install uninstall
 
-build-all:
+frontend-clean:
+	@if command -v pnpm >/dev/null 2>&1; then \
+    	echo ">> cleaning frontend with pnpm"; \
+    	cd src/frontend && pnpm clean; \
+    elif command -v npx >/dev/null 2>&1; then \
+    	echo ">> pnpm not found, falling back to npx pnpm via corepack"; \
+    	cd src/frontend && npx --yes pnpm@9 clean; \
+    else \
+    	echo "!! pnpm/npx not found — skipping frontend clean (using existing src/frontend/dist if any)"; \
+    fi
+
+frontend-build:
+	@if command -v pnpm >/dev/null 2>&1; then \
+		echo ">> building frontend with pnpm"; \
+		cd src/frontend && pnpm install --frozen-lockfile=false && pnpm build; \
+	elif command -v npx >/dev/null 2>&1; then \
+		echo ">> pnpm not found, falling back to npx pnpm via corepack"; \
+		cd src/frontend && npx --yes pnpm@9 install --frozen-lockfile=false && npx --yes pnpm@9 build; \
+	else \
+		echo "!! pnpm/npx not found — skipping frontend build (using existing src/frontend/dist if any)"; \
+	fi
+
+build-all: frontend-build
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client_windows_x64.exe src/client/main.go
@@ -32,11 +54,13 @@ build-all:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_darwin_arm64 src/server/main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=mips go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_mips src/server/main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=mips64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server_linux_mips64 src/server/main.go
-build:
+
+build: frontend-build
 	if [ ! -d $(OUTPUT_DIR) ]; then mkdir $(OUTPUT_DIR); else rm -Rf $(OUTPUT_DIR)/*; fi
 	go mod download
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-client src/client/main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(OUTPUT_DIR)/certsync-server src/server/main.go
+
 docker:
 	docker pull ubuntu:focal
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-ubuntu -f docker/Dockerfile-Client .; fi
@@ -51,6 +75,7 @@ docker:
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-server:$(VERSION) -f docker/Dockerfile-Server .; fi
 	docker build -t zliea/certsync-server:ubuntu -f docker/Dockerfile-Server .
 	docker build -t zliea/certsync-server:latest -f docker/Dockerfile-Server .
+
 docker-alpine:
 	docker pull alpine:latest
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-client:$(VERSION)-alpine -f docker/Dockerfile-Client-Alpine .; fi
@@ -59,6 +84,7 @@ docker-alpine:
 	docker build -t zliea/certsync-client-docker:alpine -f docker/Dockerfile-Client-Docker-Alpine .
 	if [ -n "$(VERSION)" ]; then docker build -t zliea/certsync-server:$(VERSION)-alpine -f docker/Dockerfile-Server-Alpine .; fi
 	docker build -t zliea/certsync-server:alpine -f docker/Dockerfile-Server-Alpine .
+
 push:
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client:$(VERSION)-ubuntu; fi
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client:$(VERSION); fi
@@ -72,6 +98,7 @@ push:
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-server:$(VERSION); fi
 	docker push zliea/certsync-server:ubuntu
 	docker push zliea/certsync-server:latest
+
 push-alpine:
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-client:$(VERSION)-alpine; fi
 	docker push zliea/certsync-client:alpine
@@ -79,9 +106,11 @@ push-alpine:
 	docker push zliea/certsync-client-docker:alpine
 	if [ -n "$(VERSION)" ]; then docker push zliea/certsync-server:$(VERSION)-alpine; fi
 	docker push zliea/certsync-server:alpine
-clean:
+
+clean: frontend-clean
 	rm -Rf $(OUTPUT_DIR)
 	go clean --cache
+
 version:
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_windows_x64.exe $(OUTPUT_DIR)/certsync-client_$(VERSION)_windows_x64.exe; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-client_windows_x86.exe $(OUTPUT_DIR)/certsync-client_$(VERSION)_windows_x86.exe; fi
@@ -103,6 +132,7 @@ version:
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_darwin_arm64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_darwin_arm64; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_linux_mips $(OUTPUT_DIR)/certsync-server_$(VERSION)_linux_mips; fi
 	if [ -n "$(VERSION)" ]; then mv $(OUTPUT_DIR)/certsync-server_linux_mips64 $(OUTPUT_DIR)/certsync-server_$(VERSION)_linux_mips64; fi
+
 all: clean build-all
 release: clean build-all version
 image: clean build docker
