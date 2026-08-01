@@ -4,6 +4,7 @@ import (
 	"certsync/src/core/cert"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/savsgio/atreugo/v11"
 )
@@ -19,6 +20,15 @@ type CertListItem struct {
 	Provider     string   `json:"provider"`
 	AutoRenew    bool     `json:"auto_renew"`
 	DisableCname *bool    `json:"disable_cname,omitempty"`
+}
+
+// CertInfo is the parsed-certificate metadata returned by /front/api/{alias}/info.
+type CertInfo struct {
+	Alias     string    `json:"alias"`
+	CN        string    `json:"cn"`
+	DNSNames  []string  `json:"dns_names"`
+	NotBefore time.Time `json:"not_before"`
+	NotAfter  time.Time `json:"not_after"`
 }
 
 // FrontAliasListHandler returns the list of configured certificates (without secrets).
@@ -149,4 +159,44 @@ func FrontUploadHandler(ctx *atreugo.RequestCtx) error {
 
 	slog.Info("certificate uploaded via front endpoint", "alias", certAlias)
 	return ctx.JSONResponse(SuccessWithM("certificate uploaded successfully"))
+}
+
+// FrontCertInfoHandler returns parsed metadata (CN, DNS names, validity window) for a certificate.
+func FrontCertInfoHandler(ctx *atreugo.RequestCtx) error {
+	if _, ok := authJWT(ctx); !ok {
+		return ctx.JSONResponse(FailedWithS("auth failed", 401), 401)
+	}
+
+	certAlias, ok := ctx.UserValue("alias").(string)
+	if !ok || certAlias == "" {
+		return ctx.JSONResponse(FailedWithS("cert alias is required", 400), 400)
+	}
+
+	if _, ok := MetaData.CertMap[certAlias]; !ok {
+		return ctx.JSONResponse(FailedWithS("cert not found", 404), 404)
+	}
+
+	if !CertStorage.CertExists(certAlias) {
+		return ctx.JSONResponse(FailedWithS("certificate files not found", 404), 404)
+	}
+
+	data, err := CertStorage.ReadFullchain(certAlias)
+	if err != nil {
+		slog.Error("failed to read fullchain", "alias", certAlias, "error", err)
+		return ctx.JSONResponse(Failed("failed to read certificate"))
+	}
+
+	x509Cert, err := cert.ParseCertExpiry(data)
+	if err != nil {
+		slog.Error("failed to parse certificate", "alias", certAlias, "error", err)
+		return ctx.JSONResponse(Failed("failed to parse certificate"))
+	}
+
+	return ctx.JSONResponse(SuccessWithD(CertInfo{
+		Alias:     certAlias,
+		CN:        x509Cert.Subject.CommonName,
+		DNSNames:  x509Cert.DNSNames,
+		NotBefore: x509Cert.NotBefore,
+		NotAfter:  x509Cert.NotAfter,
+	}))
 }
