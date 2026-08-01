@@ -58,11 +58,14 @@ Usage:
     certsync-server -g [-c config file]
   print usage:
     certsync-server -h
+  print version and exit:
+    certsync-server -v
 Options:
   -c string
     	config file path, default server.conf (default "server.conf")
   -g	generate config, default server.conf
   -h	print usage
+  -v	print version and exit
 ```
 
 ### Client Usage
@@ -77,11 +80,14 @@ Usage:
     certsync-client -g [-c config file]
   print usage:
     certsync-client -h
+  print version and exit:
+    certsync-client -v
 Options:
   -c string
     	config file path, default client.conf (default "client.conf")
   -g	generate config, default client.conf
   -h	print usage
+  -v	print version and exit
 ```
 
 ## Docker

@@ -6,6 +6,7 @@ import (
 	"certsync/src/core/meta"
 	"certsync/src/core/server"
 	"certsync/src/core/version"
+	"certsync/src/frontend"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -124,7 +125,15 @@ func main() {
 
 	atreugoServer := atreugo.New(atreugoConfig)
 
-	atreugoServer.GET("/", server.IndexHandler)
+	atreugoServer.StaticCustom("/", &atreugo.StaticFS{
+		FS:              frontend.FS,
+		IndexNames:      []string{"index.html"},
+		AllowEmptyRoot:  true,
+		Compress:        true,
+		CompressBrotli:  true,
+		AcceptByteRange: true,
+	})
+
 	atreugoServer.POST("/pub/login", server.LoginHandler)
 	atreugoServer.GET("/front/list", server.FrontAliasListHandler)
 	atreugoServer.GET("/front/{alias}/download", server.FrontDownloadHandler)
