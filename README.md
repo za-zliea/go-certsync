@@ -62,8 +62,8 @@ Usage:
     certsync-server -v
 Options:
   -c string
-    	config file path, default server.conf (default "server.conf")
-  -g	generate config, default server.conf
+    	config file path, default server.yml (default "server.yml")
+  -g	generate config, default server.yml
   -h	print usage
   -v	print version and exit
 ```
@@ -84,8 +84,8 @@ Usage:
     certsync-client -v
 Options:
   -c string
-    	config file path, default client.conf (default "client.conf")
-  -g	generate config, default client.conf
+    	config file path, default client.yml (default "client.yml")
+  -g	generate config, default client.yml
   -h	print usage
   -v	print version and exit
 ```
