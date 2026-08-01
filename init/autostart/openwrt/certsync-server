@@ -11,8 +11,8 @@ START=90
 STOP=01
 
 BIN=/usr/bin/certsync-server
-CONF=/etc/certsync/server.conf
-STORAGE=/etc/certsync/data
+CONF=/etc/certsync/server.yml
+STORAGE=/var/lib/certsync
 
 start_service() {
     [ -x "$BIN" ]  || { echo "binary $BIN not found"; return 1; }

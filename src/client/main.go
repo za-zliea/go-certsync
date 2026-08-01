@@ -51,8 +51,8 @@ func main() {
 			CertAuth:      "your-cert-auth",
 			DomainCheck:   "example.com:443",
 			LocalCheck:    false,
-			CertUpdateDir: "/etc/nginx/ssl/example.com",
-			CertUpdateCmd: "nginx -s reload",
+			CertUpdateDir: "/etc/certsync/live",
+			CertUpdateCmd: "/usr/local/bin/certsync-postscript.sh",
 			Interval:      86400,
 		}
 		err := config.WriteConfig(configFileClient, &metaData)

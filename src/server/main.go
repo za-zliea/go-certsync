@@ -49,7 +49,7 @@ func main() {
 			Address:   "0.0.0.0",
 			Port:      8080,
 			Token:     "your-auth-token",
-			Storage:   "your-cert-storage",
+			Storage:   "/var/lib/certsync",
 			CheckTime: "03:00:00",
 			DNS:       "dns-server",
 		}

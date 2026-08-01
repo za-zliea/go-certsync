@@ -1,5 +1,5 @@
 [Unit]
-Description=CertSync Server Service
+Description=CertSync Client Service
 Documentation=https://github.com/za-zliea/go-certsync
 After=syslog.target network-online.target nss-lookup.target
 Wants=network-online.target
@@ -8,7 +8,7 @@ Wants=network-online.target
 Type=simple
 User=nobody
 NoNewPrivileges=true
-ExecStart=/usr/local/bin/certsync-server -c /etc/certsync/server.conf
+ExecStart=/usr/local/bin/certsync-client -c /etc/certsync/client.yml
 Restart=on-failure
 
 [Install]

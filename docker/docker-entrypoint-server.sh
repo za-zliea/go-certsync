@@ -9,10 +9,10 @@ if [ ! -d "${CONFIG_DIR}" ]; then
 fi
 
 if [ $# = 1 ] && [ "$1" = 'certsync-server' ]; then
-    if [ ! -f "${CONFIG_DIR}/server.conf" ]; then
-        certsync-server -g -c "${CONFIG_DIR}/server.conf"
+    if [ ! -f "${CONFIG_DIR}/server.yml" ]; then
+        certsync-server -g -c "${CONFIG_DIR}/server.yml"
     else
-        certsync-server -c "${CONFIG_DIR}/server.conf"
+        certsync-server -c "${CONFIG_DIR}/server.yml"
     fi
 else
     exec "$@"

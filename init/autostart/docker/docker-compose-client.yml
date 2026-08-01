@@ -1,0 +1,24 @@
+version: '3'
+name: certsync
+
+networks:
+  net_certsync:
+    name: net_certsync
+    driver: bridge
+    attachable: true
+
+services:
+  certsync-client:
+    image: zliea/certsync-client-docker:alpine
+    container_name: certsync-client
+    restart: always
+    privileged: true
+    volumes:
+      - ./client/conf:/etc/certsync
+      - ./client/script/certsync-postscript.sh:/usr/local/bin/certsync-postscript.sh
+      - ./client/live:/etc/nginx/ssl
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - net_certsync

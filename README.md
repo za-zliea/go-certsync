@@ -92,12 +92,22 @@ Options:
 
 ## Docker
 
+The server and client images read their config from `/etc/certsync/server.yml` and
+`/etc/certsync/client.yml` respectively. The entrypoint auto-generates a demo config
+(via `-g`) on first start if the file is missing, so an empty mount will boot — but you
+should replace the generated file with your real config afterwards.
+
+The `CONFIG_DIR` environment variable overrides the `/etc/certsync` default if set.
+
 ### Server
 
 [Docker Hub](https://hub.docker.com/r/zliea/certsync-server)
 
 ```shell
-docker run -d -p 8080:8080 --name certsync-server -v ./:/etc/certsync zliea/certsync-server:latest
+docker run -d -p 8080:8080 --name certsync-server \
+  -v ./server/conf:/etc/certsync \
+  -v ./server/data:/var/lib/certsync \
+  zliea/certsync-server:latest
 ```
 
 ### Client
@@ -105,25 +115,70 @@ docker run -d -p 8080:8080 --name certsync-server -v ./:/etc/certsync zliea/cert
 [Docker Hub](https://hub.docker.com/r/zliea/certsync-client)
 
 ```shell
-docker run -d --name certsync-client -v ./:/etc/certsync zliea/certsync-client:latest
+docker run -d --name certsync-client \
+  -v ./client/conf:/etc/certsync \
+  -v ./client/script/certsync-postscript.sh:/usr/local/bin/certsync-postscript.sh \
+  -v ./client/live:/etc/nginx/ssl \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  zliea/certsync-client-docker:latest
 ```
 
-## Systemd
+The `-docker` image variant is intended for in-container clients: it mounts the Docker
+socket so the bundled post-script can `docker exec nginx nginx -s reload` after a sync.
+The plain `zliea/certsync-client` image is for host-level installs.
 
-### Install
+### With docker-compose
+
+Reference compose files live at `init/autostart/docker/docker-compose-{client,server}.yml`.
+See `init/install/docker/README.md` for the recommended directory layout.
+
+## Platform-specific Installation
+
+Step-by-step install guides (binary + config + autostart) for each supported platform:
+
+| Platform | Autostart mechanism | Guide |
+|----------|---------------------|-------|
+| Linux (systemd) | `certsync-{server,client}.service` | [`init/install/linux/README.md`](init/install/linux/README.md) |
+| Docker / docker-compose | container restart policy | [`init/install/docker/README.md`](init/install/docker/README.md) |
+| OpenWrt | `/etc/init.d/certsync-*` (procd) | [`init/install/openwrt/README.md`](init/install/openwrt/README.md) |
+| Synology (DSM) | `synosystemctl` + `autorun.sh` | [`init/install/synology/README.md`](init/install/synology/README.md) |
+| QNAP (QTS) | `autorun.sh` | [`init/install/qnap/README.md`](init/install/qnap/README.md) |
+
+Post-sync hook templates (the script invoked by `cert_update_cmd`) ship at
+`init/post-script/{docker,nginx,qnap,synology}/certsync-postscript.sh`. Each copies the
+synced PEM files from `/etc/certsync/live` to a platform-specific destination and reloads
+the target service.
+
+## Systemd (Linux)
+
+> Note: the `make install` target is currently out of sync with the repo layout — it
+> references `systemd/certsync-*.service`, but those units now live at
+> `init/autostart/systemd/`. Use the manual steps below, or adjust the Makefile paths
+> before running `make install`.
 
 ```shell
 # Build
 make build
 
-# Install binary, systemd service and generate config (requires root)
-sudo make install
+# Install binaries
+sudo install -m 755 output/certsync-server /usr/local/bin/certsync-server
+sudo install -m 755 output/certsync-client /usr/local/bin/certsync-client
+
+# Install systemd units
+sudo install -m 644 init/autostart/systemd/certsync-server.service /etc/systemd/system/certsync-server.service
+sudo install -m 644 init/autostart/systemd/certsync-client.service /etc/systemd/system/certsync-client.service
+sudo systemctl daemon-reload
+
+# Generate default configs (skip if you already have server.yml / client.yml)
+sudo mkdir -p /etc/certsync /var/lib/certsync
+sudo /usr/local/bin/certsync-server -g -c /etc/certsync/server.yml
+sudo /usr/local/bin/certsync-client -g -c /etc/certsync/client.yml
 
 # Edit config
-vi /etc/certsync/server.conf
-vi /etc/certsync/client.conf
+sudo vi /etc/certsync/server.yml
+sudo vi /etc/certsync/client.yml
 
-# Enable and start service
+# Enable and start
 sudo systemctl enable --now certsync-server
 sudo systemctl enable --now certsync-client
 ```
@@ -131,7 +186,10 @@ sudo systemctl enable --now certsync-client
 ### Uninstall
 
 ```shell
-sudo make uninstall
+sudo systemctl disable --now certsync-server certsync-client
+sudo rm -f /usr/local/bin/certsync-server /usr/local/bin/certsync-client
+sudo rm -f /etc/systemd/system/certsync-server.service /etc/systemd/system/certsync-client.service
+sudo systemctl daemon-reload
 ```
 
 ## Config
@@ -184,7 +242,7 @@ token: your-server-token-abcde12345     # Server auth token
 cert_alias: example.com                 # Certificate alias
 cert_auth: your-cert-auth-token         # Certificate auth token
 domain_check: example.com:443           # host:port of the live cert to probe
-local_check: false                      # true = use /api/{alias}/expire flow (default false)
+local_check: false                      # If your client is a lan serivce, set to true.
 cert_update_dir: /etc/nginx/ssl/example.com  # Directory to store certificates
 cert_update_cmd: nginx -s reload        # Command to run after certificate update
 interval: 86400                         # Check interval in seconds (default: 86400 = 24 hours)

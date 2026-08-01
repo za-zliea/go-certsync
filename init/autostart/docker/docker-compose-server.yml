@@ -1,0 +1,21 @@
+version: '3'
+name: certsync
+
+networks:
+  net_certsync:
+    name: net_certsync
+    driver: bridge
+    attachable: true
+
+services:
+  certsync-server:
+    image: zliea/certsync-server:alpine
+    container_name: certsync-server
+    restart: always
+    volumes:
+      - ./server/conf:/etc/certsync
+      - ./server/data:/var/lib/certsync
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - net_certsync

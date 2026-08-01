@@ -2,7 +2,7 @@ server: https://your-server.com
 token: your-server-token
 cert_alias: example.com
 cert_auth: your-cert-auth
-cert_update_dir: /etc/nginx/ssl/example.com
-cert_update_cmd: nginx -s reload
+cert_update_dir: /etc/certsync/live
+cert_update_cmd: /usr/local/bin/certsync-postscript.sh
 domain_check: example.com:443
 interval: 86400

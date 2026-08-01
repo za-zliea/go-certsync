@@ -11,11 +11,14 @@ START=95
 STOP=01
 
 BIN=/usr/bin/certsync-client
-CONF=/etc/certsync/client.conf
+CONF=/etc/certsync/client.yml
+STORAGE=/etc/certsync/live
 
 start_service() {
     [ -x "$BIN" ]  || { echo "binary $BIN not found"; return 1; }
     [ -f "$CONF" ] || { echo "config $CONF not found"; return 1; }
+
+    mkdir -p "$STORAGE"
 
     procd_open_instance
     procd_set_param command "$BIN" -c "$CONF"

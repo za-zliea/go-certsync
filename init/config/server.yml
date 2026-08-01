@@ -1,7 +1,7 @@
 address: 0.0.0.0
 port: 8081
 token: your-auth-token
-storage: your-cert-storage
+storage: /var/lib/certsync
 cert_check_time: "03:00:00"
 dns: dns-server
 admin:
