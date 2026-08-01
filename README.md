@@ -28,7 +28,7 @@ A certificate synchronization service for SSL/TLS certificates [GitHub](https://
 
 ### Prerequirements
 
-- golang >= 1.25
+- golang >= 1.26
 - make
 
 ### Without Docker
