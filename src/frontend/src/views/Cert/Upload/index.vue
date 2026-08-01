@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadRawFile, UploadUserFile, FormInstance, FormRules } from 'element-plus'
 import { listCerts, uploadCert, type CertListItem } from '@/api/cert'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Only `auto_renew: false` certs can be uploaded (FrontUploadHandler rejects
 // the other case with 403). We fetch the full list once on mount and filter
@@ -20,12 +23,13 @@ const form = reactive({
 
 const uploadableCerts = computed(() => allCerts.value.filter((c) => !c.auto_renew))
 
-const rules: FormRules = {
-  alias: [{ required: true, message: '请选择证书别名', trigger: 'change' }],
+// Reactive rules so validation messages follow the active locale.
+const rules = computed<FormRules>(() => ({
+  alias: [{ required: true, message: t('cert.upload.ruleAlias'), trigger: 'change' }],
   fullchain: [
     {
       validator: (_r, value, cb) => {
-        if (!value || value.length === 0) cb(new Error('请选择 fullchain 文件'))
+        if (!value || value.length === 0) cb(new Error(t('cert.upload.ruleFullchain')))
         else cb()
       },
       trigger: 'change'
@@ -34,17 +38,17 @@ const rules: FormRules = {
   privkey: [
     {
       validator: (_r, value, cb) => {
-        if (!value || value.length === 0) cb(new Error('请选择 privkey 文件'))
+        if (!value || value.length === 0) cb(new Error(t('cert.upload.rulePrivkey')))
         else cb()
       },
       trigger: 'change'
     }
   ]
-}
+}))
 
 // Restrict uploads to a single PEM file per field; reject extras gently.
 function handleExceed() {
-  ElMessage.warning('每个位置只允许上传一个文件，请先删除已有文件')
+  ElMessage.warning(t('cert.upload.warnMultipleFile'))
 }
 
 function rawFile(file: UploadUserFile): File {
@@ -83,7 +87,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await uploadCert(form.alias, fd)
-    ElMessage.success('证书上传成功')
+    ElMessage.success(t('cert.upload.success'))
     // Reset the file inputs; keep the alias selected for convenience.
     form.fullchain = []
     form.privkey = []
@@ -101,7 +105,7 @@ onMounted(fetchCerts)
   <div v-loading="loading" class="upload-page">
     <el-card shadow="never">
       <template #header>
-        <span class="card-title">证书上传</span>
+        <span class="card-title">{{ t('cert.upload.title') }}</span>
       </template>
 
       <el-alert
@@ -109,8 +113,8 @@ onMounted(fetchCerts)
         type="info"
         :closable="false"
         show-icon
-        title="当前没有可上传的证书"
-        description="仅 auto_renew 为 false 的证书允许手动上传；auto_renew 为 true 的证书由 ACME 自动签发与续期。"
+        :title="t('cert.upload.alertTitle')"
+        :description="t('cert.upload.alertDesc')"
       />
 
       <el-form
@@ -121,8 +125,12 @@ onMounted(fetchCerts)
         label-width="120px"
         style="max-width: 640px"
       >
-        <el-form-item label="证书别名" prop="alias">
-          <el-select v-model="form.alias" placeholder="请选择证书" style="width: 100%">
+        <el-form-item :label="t('cert.upload.alias')" prop="alias">
+          <el-select
+            v-model="form.alias"
+            :placeholder="t('cert.upload.placeholderAlias')"
+            style="width: 100%"
+          >
             <el-option
               v-for="c in uploadableCerts"
               :key="c.alias"
@@ -132,7 +140,7 @@ onMounted(fetchCerts)
           </el-select>
         </el-form-item>
 
-        <el-form-item label="Fullchain" prop="fullchain">
+        <el-form-item :label="t('cert.upload.fullchain')" prop="fullchain">
           <el-upload
             v-model:file-list="form.fullchain"
             :limit="1"
@@ -140,14 +148,14 @@ onMounted(fetchCerts)
             :on-exceed="handleExceed"
             accept=".pem,.crt,.cer,.txt"
           >
-            <el-button type="primary" plain>选择文件</el-button>
+            <el-button type="primary" plain>{{ t('cert.upload.selectFile') }}</el-button>
             <template #tip>
-              <div class="form-tip">完整证书链 PEM 文件（fullchain.pem）。</div>
+              <div class="form-tip">{{ t('cert.upload.fullchainTip') }}</div>
             </template>
           </el-upload>
         </el-form-item>
 
-        <el-form-item label="Privkey" prop="privkey">
+        <el-form-item :label="t('cert.upload.privkey')" prop="privkey">
           <el-upload
             v-model:file-list="form.privkey"
             :limit="1"
@@ -155,16 +163,16 @@ onMounted(fetchCerts)
             :on-exceed="handleExceed"
             accept=".pem,.key,.txt"
           >
-            <el-button type="primary" plain>选择文件</el-button>
+            <el-button type="primary" plain>{{ t('cert.upload.selectFile') }}</el-button>
             <template #tip>
-              <div class="form-tip">私钥 PEM 文件（privkey.pem）。</div>
+              <div class="form-tip">{{ t('cert.upload.privkeyTip') }}</div>
             </template>
           </el-upload>
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            提交上传
+            {{ t('cert.upload.submit') }}
           </el-button>
         </el-form-item>
       </el-form>

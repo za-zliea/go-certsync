@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+// RenewalLeadDays 与 scheduler 续期判定中传给 cert.NeedsRenewal 的阈值保持同步。
+// 修改这里时请同步检查 scheduler.go 内 NeedsRenewal(expiry, RenewalLeadDays) 的调用。
+const RenewalLeadDays = 10
+
 type Scheduler struct {
 	Config      *meta.ServerConfig
 	Storage     *cert.CertStorage
@@ -118,7 +122,7 @@ func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 
 	if !hasLocalCert {
 		if hasRemoteCert {
-			if cert.NeedsRenewal(remoteExpiry, 10) {
+			if cert.NeedsRenewal(remoteExpiry, RenewalLeadDays) {
 				shouldRenew = true
 				reason = "no local cert and remote cert expiring soon"
 			}
@@ -127,7 +131,7 @@ func (s *Scheduler) CheckAndRenewCertStatus(certConfig *meta.CertConfig) int {
 			reason = "no local cert available"
 		}
 	} else {
-		if cert.NeedsRenewal(localExpiry, 10) {
+		if cert.NeedsRenewal(localExpiry, RenewalLeadDays) {
 			shouldRenew = true
 			reason = "local cert expiring within 10 days"
 		}
@@ -175,4 +179,39 @@ func (s *Scheduler) calculateInitialDelay(scheduleTime string) time.Duration {
 	}
 
 	return time.Until(next)
+}
+
+// nextRunAt 返回 >= from 的下一个匹配 scheduleTime（"HH:MM:SS"，本地时区）的时刻。
+// scheduleTime 为空或解析失败时回退到 "03:00:00"（与 Scheduler.parseCheckTime 一致）。
+func nextRunAt(from time.Time, scheduleTime string) time.Time {
+	if scheduleTime == "" {
+		scheduleTime = "03:00:00"
+	}
+	parsed, err := time.ParseInLocation("15:04:05", scheduleTime, from.Location())
+	if err != nil {
+		parsed, _ = time.ParseInLocation("15:04:05", "03:00:00", from.Location())
+	}
+	next := time.Date(from.Year(), from.Month(), from.Day(),
+		parsed.Hour(), parsed.Minute(), parsed.Second(), 0, from.Location())
+	if next.Before(from) {
+		next = next.Add(24 * time.Hour)
+	}
+	return next
+}
+
+// ExpectedRenewAt 返回调度器下一次会为该证书触发续期的时间。
+// auto_renew=false 时返回 nil（调度器永不续期，对应 CERT_NONE）。
+// 调用方：FrontCertInfoHandler。
+func (s *Scheduler) ExpectedRenewAt(notAfter time.Time, autoRenew bool) *time.Time {
+	if !autoRenew {
+		return nil
+	}
+	threshold := notAfter.Add(-time.Duration(RenewalLeadDays) * 24 * time.Hour)
+	now := time.Now()
+	start := threshold
+	if start.Before(now) {
+		start = now
+	}
+	next := nextRunAt(start, s.Config.CheckTime)
+	return &next
 }

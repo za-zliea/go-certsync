@@ -11,24 +11,36 @@ import (
 
 // CertListItem is the public projection of a CertConfig exposed via /front/list.
 // Sensitive fields (AccessKey, AccessKeySecret, Auth, UploadToken) are intentionally omitted.
+//
+// NotBefore / NotAfter / DaysRemaining / ExpectedRenewAt are populated only
+// when a local cert exists for the alias; otherwise they stay nil and, due
+// to `omitempty`, are omitted from the JSON — the frontend renders them as
+// `-`. Keep them as pointers (not zero values) so "missing" is distinct
+// from "expired at epoch".
 type CertListItem struct {
-	Alias        string   `json:"alias"`
-	Email        string   `json:"email"`
-	Domain       string   `json:"domain"`
-	DomainCN     []string `json:"domain_cn"`
-	DomainCheck  string   `json:"domain_check"`
-	Provider     string   `json:"provider"`
-	AutoRenew    bool     `json:"auto_renew"`
-	DisableCname *bool    `json:"disable_cname,omitempty"`
+	Alias           string     `json:"alias"`
+	Email           string     `json:"email"`
+	Domain          string     `json:"domain"`
+	DomainCN        []string   `json:"domain_cn"`
+	DomainCheck     string     `json:"domain_check"`
+	Provider        string     `json:"provider"`
+	AutoRenew       bool       `json:"auto_renew"`
+	DisableCname    *bool      `json:"disable_cname,omitempty"`
+	NotBefore       *time.Time `json:"not_before,omitempty"`
+	NotAfter        *time.Time `json:"not_after,omitempty"`
+	DaysRemaining   *int       `json:"days_remaining,omitempty"`
+	ExpectedRenewAt *time.Time `json:"expected_renew_at,omitempty"`
 }
 
 // CertInfo is the parsed-certificate metadata returned by /front/api/{alias}/info.
 type CertInfo struct {
-	Alias     string    `json:"alias"`
-	CN        string    `json:"cn"`
-	DNSNames  []string  `json:"dns_names"`
-	NotBefore time.Time `json:"not_before"`
-	NotAfter  time.Time `json:"not_after"`
+	Alias           string     `json:"alias"`
+	CN              string     `json:"cn"`
+	DNSNames        []string   `json:"dns_names"`
+	NotBefore       time.Time  `json:"not_before"`
+	NotAfter        time.Time  `json:"not_after"`
+	DaysRemaining   int        `json:"days_remaining"`
+	ExpectedRenewAt *time.Time `json:"expected_renew_at,omitempty"`
 }
 
 // FrontAliasListHandler returns the list of configured certificates (without secrets).
@@ -39,7 +51,7 @@ func FrontAliasListHandler(ctx *atreugo.RequestCtx) error {
 
 	items := make([]CertListItem, 0, len(MetaData.Certs))
 	for _, c := range MetaData.Certs {
-		items = append(items, CertListItem{
+		item := CertListItem{
 			Alias:        c.Alias,
 			Email:        c.Email,
 			Domain:       c.Domain,
@@ -48,7 +60,31 @@ func FrontAliasListHandler(ctx *atreugo.RequestCtx) error {
 			Provider:     c.Provider,
 			AutoRenew:    c.AutoRenew,
 			DisableCname: c.DisableCname,
-		})
+		}
+
+		// When a local cert exists, enrich the row with parsed validity
+		// metadata. Errors here (e.g. corrupted file) are logged but do
+		// not fail the whole list — the row simply renders with `-` for
+		// the dynamic columns.
+		if CertStorage.CertExists(c.Alias) {
+			if data, err := CertStorage.ReadFullchain(c.Alias); err == nil {
+				if x509Cert, err := cert.ParseCertExpiry(data); err == nil {
+					notBefore := x509Cert.NotBefore
+					notAfter := x509Cert.NotAfter
+					days := int(time.Until(notAfter).Hours() / 24)
+					item.NotBefore = &notBefore
+					item.NotAfter = &notAfter
+					item.DaysRemaining = &days
+					item.ExpectedRenewAt = GlobalScheduler.ExpectedRenewAt(notAfter, c.AutoRenew)
+				} else {
+					slog.Warn("failed to parse certificate for list", "alias", c.Alias, "error", err)
+				}
+			} else {
+				slog.Warn("failed to read fullchain for list", "alias", c.Alias, "error", err)
+			}
+		}
+
+		items = append(items, item)
 	}
 
 	return ctx.JSONResponse(SuccessWithD(items))
@@ -172,7 +208,8 @@ func FrontCertInfoHandler(ctx *atreugo.RequestCtx) error {
 		return ctx.JSONResponse(FailedWithS("cert alias is required", 400), 400)
 	}
 
-	if _, ok := MetaData.CertMap[certAlias]; !ok {
+	certConfig, ok := MetaData.CertMap[certAlias]
+	if !ok {
 		return ctx.JSONResponse(FailedWithS("cert not found", 404), 404)
 	}
 
@@ -192,11 +229,16 @@ func FrontCertInfoHandler(ctx *atreugo.RequestCtx) error {
 		return ctx.JSONResponse(Failed("failed to parse certificate"))
 	}
 
+	daysRemaining := int(time.Until(x509Cert.NotAfter).Hours() / 24)
+	expectedRenew := GlobalScheduler.ExpectedRenewAt(x509Cert.NotAfter, certConfig.AutoRenew)
+
 	return ctx.JSONResponse(SuccessWithD(CertInfo{
-		Alias:     certAlias,
-		CN:        x509Cert.Subject.CommonName,
-		DNSNames:  x509Cert.DNSNames,
-		NotBefore: x509Cert.NotBefore,
-		NotAfter:  x509Cert.NotAfter,
+		Alias:           certAlias,
+		CN:              x509Cert.Subject.CommonName,
+		DNSNames:        x509Cert.DNSNames,
+		NotBefore:       x509Cert.NotBefore,
+		NotAfter:        x509Cert.NotAfter,
+		DaysRemaining:   daysRemaining,
+		ExpectedRenewAt: expectedRenew,
 	}))
 }

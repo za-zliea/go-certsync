@@ -4,19 +4,22 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { Upload, Download, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { useI18n } from 'vue-i18n'
+import LangSwitch from '@/components/LangSwitch.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 // Single source of truth for the sidebar: the children of the `/` route.
-// Only routes that declare `meta.title` are shown — this filters out any
+// Only routes that declare `meta.titleKey` are shown — this filters out any
 // future helpers without touching the menu code.
 const ICONS = { Upload, Download } as const
 
 interface MenuEntry {
   path: string
-  title: string
+  titleKey: string
   icon: keyof typeof ICONS | undefined
 }
 
@@ -24,10 +27,10 @@ const menus = computed<MenuEntry[]>(() => {
   const root = router.getRoutes().find((r) => r.path === '/')
   if (!root || !root.children) return []
   return root.children
-    .filter((c) => !!c.meta?.title)
+    .filter((c) => !!c.meta?.titleKey)
     .map((c) => ({
       path: c.path,
-      title: String(c.meta?.title ?? ''),
+      titleKey: String(c.meta?.titleKey ?? ''),
       icon: (c.meta?.icon as keyof typeof ICONS) ?? undefined
     }))
 })
@@ -37,11 +40,15 @@ const activeMenu = computed(() => route.path)
 
 async function handleLogout() {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      type: 'warning',
-      confirmButtonText: '退出',
-      cancelButtonText: '取消'
-    })
+    await ElMessageBox.confirm(
+      t('layout.logoutConfirmPrompt'),
+      t('layout.logoutConfirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: t('layout.logoutButton'),
+        cancelButtonText: t('common.cancel')
+      }
+    )
   } catch {
     return // cancelled
   }
@@ -54,7 +61,7 @@ async function handleLogout() {
   <el-container class="layout-root">
     <el-aside width="220px" class="layout-aside">
       <div class="logo">
-        <span>CertSync</span>
+        <span>{{ t('brand.name') }}</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -67,16 +74,19 @@ async function handleLogout() {
           <el-icon v-if="m.icon && ICONS[m.icon]">
             <component :is="ICONS[m.icon]" />
           </el-icon>
-          <span>{{ m.title }}</span>
+          <span>{{ t(m.titleKey) }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
 
     <el-container>
       <el-header class="layout-header">
-        <div class="header-title">证书管理后台</div>
+        <div class="header-title">{{ t('console.title') }}</div>
         <div class="header-right">
-          <el-button :icon="SwitchButton" text @click="handleLogout">退出登录</el-button>
+          <LangSwitch class="header-lang" />
+          <el-button :icon="SwitchButton" text @click="handleLogout">
+            {{ t('layout.logout') }}
+          </el-button>
         </div>
       </el-header>
       <el-main class="layout-main">
@@ -126,6 +136,16 @@ async function handleLogout() {
 .header-title {
   font-size: 16px;
   font-weight: 600;
+  color: #303133;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-lang {
   color: #303133;
 }
 

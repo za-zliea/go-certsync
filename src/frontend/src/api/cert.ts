@@ -1,6 +1,10 @@
 import service, { request, type ResponseDTO } from '@/utils/request'
+import { t } from '@/locales'
 
 // Matches src/core/server/front.go CertListItem.
+// `not_before` / `not_after` / `days_remaining` / `expected_renew_at` are
+// populated only when a local cert exists; otherwise undefined → table
+// renders `-`.
 export interface CertListItem {
   alias: string
   email: string
@@ -10,6 +14,10 @@ export interface CertListItem {
   provider: string
   auto_renew: boolean
   disable_cname?: boolean | null
+  not_before?: string
+  not_after?: string
+  days_remaining?: number
+  expected_renew_at?: string
 }
 
 // Matches src/core/server/front.go CertInfo.
@@ -20,6 +28,8 @@ export interface CertInfo {
   dns_names: string[]
   not_before: string
   not_after: string
+  days_remaining: number
+  expected_renew_at: string | null
 }
 
 // GET /front/api/list → CertListItem[]
@@ -67,7 +77,7 @@ export async function downloadCert(alias: string): Promise<Blob> {
   if (contentType.includes('application/json')) {
     // Server returned an error envelope disguised as a 200.
     const text = await resp.data.text()
-    let message = '下载失败：响应不是有效的证书包'
+    let message = t('cert.download.invalidPackage')
     try {
       const env = JSON.parse(text) as ResponseDTO
       if (env && typeof env.message === 'string' && env.message) message = env.message

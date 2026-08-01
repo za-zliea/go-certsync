@@ -13,10 +13,14 @@ export interface LoginData {
 }
 
 // POST /front/pub/login → { token, expires_at }
+// skipErrorHandler: a wrong password yields HTTP 401, which the global
+// interceptor would otherwise turn into "session expired" + a forced
+// redirect. The caller surfaces a login-specific message instead.
 export function loginApi(data: LoginData): Promise<LoginResult> {
   return request<LoginResult>({
     url: '/front/pub/login',
     method: 'POST',
-    data
+    data,
+    skipErrorHandler: true
   })
 }

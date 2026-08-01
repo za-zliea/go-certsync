@@ -11,7 +11,7 @@ const router = createRouter({
       path: '/login',
       name: 'Login',
       component: () => import('@/views/Login/index.vue'),
-      meta: { title: '登录', requiresAuth: false }
+      meta: { titleKey: 'route.login', requiresAuth: false }
     },
     {
       path: '/',
@@ -19,16 +19,16 @@ const router = createRouter({
       redirect: '/cert/download',
       children: [
         {
-          path: '/cert/upload',
-          name: 'CertUpload',
-          component: () => import('@/views/Cert/Upload/index.vue'),
-          meta: { title: '证书上传', icon: 'Upload', requiresAuth: true }
-        },
-        {
           path: '/cert/download',
           name: 'CertDownload',
           component: () => import('@/views/Cert/Download/index.vue'),
-          meta: { title: '证书下载', icon: 'Download', requiresAuth: true }
+          meta: { titleKey: 'route.certDownload', icon: 'Download', requiresAuth: true }
+        },
+        {
+          path: '/cert/upload',
+          name: 'CertUpload',
+          component: () => import('@/views/Cert/Upload/index.vue'),
+          meta: { titleKey: 'route.certUpload', icon: 'Upload', requiresAuth: true }
         }
       ]
     },
@@ -53,5 +53,8 @@ router.beforeEach((to) => {
   }
   return true
 })
+
+// document.title is set in App.vue, which watches both the active locale and
+// the current route — that covers both navigation and language switching.
 
 export default router

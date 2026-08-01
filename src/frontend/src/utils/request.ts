@@ -6,6 +6,18 @@ import axios, {
 } from 'axios'
 import { ElMessage } from 'element-plus'
 import { TOKEN_KEY } from '@/store/user'
+import { t } from '@/locales'
+
+// When `skipErrorHandler: true` is set on a request, the response error
+// interceptor bypasses its global handling (no ElMessage, no auto-redirect
+// on 401) and simply rejects. Used by the login call so a 401 from
+// `/front/pub/login` is reported by the caller with a login-specific
+// message instead of "session expired".
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipErrorHandler?: boolean
+  }
+}
 
 // Server-side ResponseDTO (see src/core/server/base.go):
 //   { code: 0|1, message: string, data: any }
@@ -51,13 +63,13 @@ function handleUnauthorized() {
 // Extract a human-readable message from an axios error response. Returns the
 // server-provided envelope `message` when present, otherwise a status hint.
 function extractErrorMessage(response: AxiosResponse | undefined): string {
-  if (!response) return '请求失败'
+  if (!response) return t('request.failed')
   const body = response.data
   if (body && typeof body === 'object' && 'message' in body) {
     const m = (body as ResponseDTO).message
     if (typeof m === 'string' && m) return m
   }
-  return `请求失败 (${response.status})`
+  return t('request.failedWithStatus', { status: response.status })
 }
 
 // Response interceptor: unwrap the standard envelope.
@@ -90,20 +102,23 @@ service.interceptors.response.use(
     }
 
     // Business error: surface the server message and reject.
-    const msg = body.message || 'request failed'
+    const msg = body.message || t('request.failed')
     ElMessage.error(msg)
     return Promise.reject(new Error(msg))
   },
   (error) => {
+    if (error.config?.skipErrorHandler) {
+      return Promise.reject(error)
+    }
     if (error.response?.status === 401) {
       handleUnauthorized()
-      ElMessage.error('登录已过期，请重新登录')
+      ElMessage.error(t('request.expired'))
     } else if (error.response) {
       ElMessage.error(extractErrorMessage(error.response))
     } else if (error.request) {
-      ElMessage.error('网络异常，请检查与服务端的连接')
+      ElMessage.error(t('request.network'))
     } else {
-      ElMessage.error(error.message || '未知错误')
+      ElMessage.error(error.message || t('request.unknown'))
     }
     return Promise.reject(error)
   }

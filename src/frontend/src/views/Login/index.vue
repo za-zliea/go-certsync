@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Lock, User } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { useI18n } from 'vue-i18n'
+import LangSwitch from '@/components/LangSwitch.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -17,10 +20,11 @@ const form = reactive({
   password: ''
 })
 
-const rules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
+// Reactive rules so the validation messages follow the active locale.
+const rules = computed<FormRules>(() => ({
+  username: [{ required: true, message: t('login.ruleUsername'), trigger: 'blur' }],
+  password: [{ required: true, message: t('login.rulePassword'), trigger: 'blur' }]
+}))
 
 async function handleSubmit() {
   if (!formRef.value) return
@@ -33,12 +37,11 @@ async function handleSubmit() {
   loading.value = true
   try {
     await userStore.login({ username: form.username, password: form.password })
-    ElMessage.success('登录成功')
+    ElMessage.success(t('login.success'))
     const redirect = (route.query.redirect as string) || '/cert/download'
     router.replace(redirect)
   } catch {
-    // The axios interceptor already shows the server message (e.g.
-    // "invalid credentials"), so nothing to do here.
+    ElMessage.error(t('login.failed'))
   } finally {
     loading.value = false
   }
@@ -47,10 +50,11 @@ async function handleSubmit() {
 
 <template>
   <div class="login-page">
+    <LangSwitch class="login-lang" />
     <div class="login-card">
       <div class="login-header">
-        <h1>CertSync</h1>
-        <p>证书同步管理后台</p>
+        <h1>{{ t('brand.name') }}</h1>
+        <p>{{ t('console.title') }}</p>
       </div>
 
       <el-form
@@ -61,22 +65,22 @@ async function handleSubmit() {
         label-position="top"
         @submit.prevent="handleSubmit"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="t('login.username')" prop="username">
           <el-input
             v-model="form.username"
-            placeholder="请输入用户名"
+            :placeholder="t('login.placeholderUsername')"
             :prefix-icon="User"
             autocomplete="username"
             @keyup.enter="handleSubmit"
           />
         </el-form-item>
 
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="t('login.password')" prop="password">
           <el-input
             v-model="form.password"
             type="password"
             show-password
-            placeholder="请输入密码"
+            :placeholder="t('login.placeholderPassword')"
             :prefix-icon="Lock"
             autocomplete="current-password"
             @keyup.enter="handleSubmit"
@@ -90,25 +94,29 @@ async function handleSubmit() {
             :loading="loading"
             @click="handleSubmit"
           >
-            登 录
+            {{ t('login.button') }}
           </el-button>
         </el-form-item>
       </el-form>
-
-      <div class="login-tip">
-        首次启动服务端时，日志会打印一次随机生成的管理员明文密码。
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .login-page {
+  position: relative;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1f2a44 0%, #0b1020 100%);
+}
+
+.login-lang {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  color: #ffffff;
 }
 
 .login-card {
@@ -139,13 +147,5 @@ async function handleSubmit() {
 
 .login-submit {
   width: 100%;
-}
-
-.login-tip {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #909399;
-  text-align: center;
-  line-height: 1.6;
 }
 </style>

@@ -9,6 +9,9 @@ import {
   type CertListItem,
   type CertInfo
 } from '@/api/cert'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const list = ref<CertListItem[]>([])
 const loading = ref(false)
@@ -81,7 +84,7 @@ async function handleDownload(row: CertListItem) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    ElMessage.success('开始下载')
+    ElMessage.success(t('cert.download.startDownload'))
   } catch {
     // surfaced by interceptor / downloadCert
   } finally {
@@ -97,30 +100,55 @@ onMounted(fetchList)
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span class="card-title">证书下载</span>
-          <el-button text type="primary" @click="fetchList">刷新</el-button>
+          <span class="card-title">{{ t('cert.download.title') }}</span>
+          <el-button text type="primary" @click="fetchList">
+            {{ t('cert.download.refresh') }}
+          </el-button>
         </div>
       </template>
 
-      <el-table :data="list" border stripe empty-text="暂无证书">
-        <el-table-column prop="alias" label="别名" min-width="180" />
-        <el-table-column prop="domain" label="主域名" min-width="180" />
-        <el-table-column label="DNS 提供商" width="130">
+      <el-table :data="list" border stripe :empty-text="t('cert.download.empty')">
+        <el-table-column prop="alias" :label="t('cert.download.columnAlias')" min-width="180" />
+        <el-table-column prop="domain" :label="t('cert.download.columnDomain')" min-width="180" />
+        <el-table-column :label="t('cert.download.columnProvider')" width="130">
           <template #default="{ row }">
             <el-tag :type="providerTagType(row.provider)" effect="plain">
               {{ row.provider || '-' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="续期模式" width="110">
+        <el-table-column :label="t('cert.download.columnRenewMode')" width="110">
           <template #default="{ row }">
             <el-tag :type="row.auto_renew ? 'success' : 'info'" effect="dark">
-              {{ row.auto_renew ? '自动' : '手动' }}
+              {{ row.auto_renew ? t('cert.download.tagAuto') : t('cert.download.tagManual') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="domain_check" label="检查地址" min-width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('cert.download.columnNotBefore')" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.not_before) }}</template>
+        </el-table-column>
+        <el-table-column :label="t('cert.download.columnNotAfter')" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.not_after) }}</template>
+        </el-table-column>
+        <el-table-column :label="t('cert.download.columnDaysRemaining')" width="120">
+          <template #default="{ row }">
+            <template v-if="row.days_remaining == null">-</template>
+            <el-tag v-else-if="row.days_remaining < 0" type="danger" effect="dark">
+              {{ t('cert.download.tagExpired') }}
+            </el-tag>
+            <el-tag v-else-if="row.days_remaining < 10" type="danger" effect="plain">
+              {{ row.days_remaining }}
+            </el-tag>
+            <el-tag v-else-if="row.days_remaining < 30" type="warning" effect="plain">
+              {{ row.days_remaining }}
+            </el-tag>
+            <span v-else>{{ row.days_remaining }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('cert.download.columnExpectedRenewAt')" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.expected_renew_at) }}</template>
+        </el-table-column>
+        <el-table-column :label="t('cert.download.columnOperation')" width="180" fixed="right">
           <template #default="{ row }">
             <el-button
               size="small"
@@ -128,7 +156,7 @@ onMounted(fetchList)
               :loading="busyAlias === row.alias && detailLoading"
               @click="handleDetail(row)"
             >
-              详情
+              {{ t('cert.download.btnDetail') }}
             </el-button>
             <el-button
               size="small"
@@ -138,7 +166,7 @@ onMounted(fetchList)
               :disabled="!row.alias"
               @click="handleDownload(row)"
             >
-              下载
+              {{ t('cert.download.btnDownload') }}
             </el-button>
           </template>
         </el-table-column>
@@ -147,15 +175,19 @@ onMounted(fetchList)
 
     <el-dialog
       v-model="detailVisible"
-      title="证书详情"
+      :title="t('cert.download.detail.title')"
       width="560px"
       destroy-on-close
     >
       <div v-loading="detailLoading">
         <el-descriptions v-if="detail" :column="1" border>
-          <el-descriptions-item label="别名">{{ detail.alias }}</el-descriptions-item>
-          <el-descriptions-item label="通用名 (CN)">{{ detail.cn || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="SAN 域名">
+          <el-descriptions-item :label="t('cert.download.detail.alias')">
+            {{ detail.alias }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.cn')">
+            {{ detail.cn || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.san')">
             <div v-if="detail.dns_names && detail.dns_names.length">
               <el-tag
                 v-for="name in detail.dns_names"
@@ -169,14 +201,28 @@ onMounted(fetchList)
             </div>
             <span v-else>-</span>
           </el-descriptions-item>
-          <el-descriptions-item label="生效时间">
+          <el-descriptions-item :label="t('cert.download.detail.notBefore')">
             {{ formatTime(detail.not_before) }}
           </el-descriptions-item>
-          <el-descriptions-item label="过期时间">
+          <el-descriptions-item :label="t('cert.download.detail.notAfter')">
             {{ formatTime(detail.not_after) }}
           </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.daysRemaining')">
+            <el-tag
+              v-if="detail.days_remaining < 0"
+              type="danger"
+              effect="dark"
+            >{{ t('cert.download.detail.expired') }}</el-tag>
+            <span v-else>{{ detail.days_remaining }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('cert.download.detail.expectedRenewAt')">
+            {{ detail.expected_renew_at ? formatTime(detail.expected_renew_at) : '-' }}
+          </el-descriptions-item>
         </el-descriptions>
-        <el-empty v-else-if="!detailLoading" description="暂无数据" />
+        <el-empty
+          v-else-if="!detailLoading"
+          :description="t('cert.download.detail.empty')"
+        />
       </div>
     </el-dialog>
   </div>
