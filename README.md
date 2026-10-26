@@ -243,16 +243,19 @@ cert_update_dir: /etc/nginx/ssl/example.com  # Directory to store certificates
 cert_update_cmd: nginx -s reload        # Command to run after certificate update
 interval: 86400                         # Check interval in seconds (default: 86400 = 24 hours)
 proxy:                                  # Optional: proxy for server API calls and local_check
-  enable: false                         # Set to true to route traffic through the proxy
+  enable: false                         # Master switch; traffic below only uses the proxy when true
   url: http://127.0.0.1:8080            # http:// or https:// proxy address
   username: proxy-user                  # Optional: proxy auth username
   password: proxy-pass                  # Optional: proxy auth password
+  server_api: true                      # Optional: proxy the server API calls (default true)
+  local_check: false                    # Optional: proxy the local_check TLS probe (default true)
 ```
 
-When `proxy.enable` is `true`, all outbound traffic goes through the configured proxy:
-the server API requests (HTTPS via CONNECT tunnel) and the `local_check` TLS probe.
-`username`/`password` enable proxy authentication. When disabled, behavior is unchanged
-(the standard `HTTP_PROXY`/`HTTPS_PROXY` environment variables still apply).
+`server_api` and `local_check` control separately whether the server API requests
+(HTTPS via CONNECT tunnel) and the `local_check` TLS probe go through the proxy; both
+default to `true` when omitted. `username`/`password` enable proxy authentication. When
+`proxy.enable` is `false` (or both sub-switches are `false`), all traffic connects
+directly and the standard `HTTP_PROXY`/`HTTPS_PROXY` environment variables apply again.
 
 ### Domain Check Configuration
 

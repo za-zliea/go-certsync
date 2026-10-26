@@ -85,7 +85,9 @@ func main() {
 		os.Exit(1)
 	}
 	if clientConfig.Proxy.Enable {
-		slog.Info("proxy enabled", "proxy", clientConfig.Proxy.URL)
+		slog.Info("proxy enabled", "proxy", clientConfig.Proxy.URL,
+			"server_api", clientConfig.Proxy.UseServerAPI(),
+			"local_check", clientConfig.Proxy.UseLocalCheck())
 	}
 	client.MetaData = &clientConfig
 

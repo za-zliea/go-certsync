@@ -7,7 +7,9 @@ cert_update_cmd: /usr/local/bin/certsync-postscript.sh
 domain_check: example.com:443
 interval: 86400
 proxy:
-  enable: false                 # 代理开关，true 时 server API 请求与 local_check 均走代理
+  enable: false                 # 代理总开关，true 时按下方子开关分流
   url: http://127.0.0.1:8080    # 代理地址，支持 http:// 与 https://
   # username: proxy-user        # 可选：代理认证用户名
   # password: proxy-pass        # 可选：代理认证密码
+  # server_api: true            # 可选：server API 请求走代理，缺省 true
+  # local_check: true           # 可选：local_check 证书探测走代理，缺省 true

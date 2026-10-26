@@ -44,7 +44,7 @@ func newHTTPClient() *httpClient {
 		},
 	}
 
-	if u := proxyURL(); u != nil {
+	if u := serverProxyURL(); u != nil {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.Proxy = http.ProxyURL(u)
 		h.client.Transport = transport
@@ -58,11 +58,23 @@ func newHTTPClient() *httpClient {
 	return h
 }
 
-// proxyURL 返回解析后的代理地址；未启用或配置无效时返回 nil（直连）。
-func proxyURL() *url.URL {
-	if MetaData == nil || !MetaData.Proxy.Enable {
+// serverProxyURL 返回 server API 请求使用的代理地址；未启用或配置无效时返回 nil（直连）。
+func serverProxyURL() *url.URL {
+	if MetaData == nil || !MetaData.Proxy.UseServerAPI() {
 		return nil
 	}
+	return parseProxyURL()
+}
+
+// localCheckProxyURL 返回 local_check 探测使用的代理地址；未启用或配置无效时返回 nil（直连）。
+func localCheckProxyURL() *url.URL {
+	if MetaData == nil || !MetaData.Proxy.UseLocalCheck() {
+		return nil
+	}
+	return parseProxyURL()
+}
+
+func parseProxyURL() *url.URL {
 	u, err := MetaData.Proxy.Parse()
 	if err != nil {
 		slog.Warn("invalid proxy config, falling back to direct connection", "error", err)
@@ -193,7 +205,7 @@ func GetServerExpire(remoteExpire *time.Time) (*ExpireResponse, error) {
 }
 
 func CheckLocal() (*CheckResponse, error) {
-	remoteExpiry, err := cert.GetRemoteCertExpiryWithProxy(MetaData.DomainCheck, proxyURL())
+	remoteExpiry, err := cert.GetRemoteCertExpiryWithProxy(MetaData.DomainCheck, localCheckProxyURL())
 	if err != nil {
 		return nil, fmt.Errorf("failed to check remote certificate: %v", err)
 	}
