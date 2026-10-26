@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"certsync/src/core/cert"
 	"certsync/src/core/meta"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,14 +33,49 @@ type ExpireResponse struct {
 }
 
 type httpClient struct {
-	client *http.Client
+	client    *http.Client
+	proxyAuth string
 }
 
 func newHTTPClient() *httpClient {
-	return &httpClient{
+	h := &httpClient{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+	}
+
+	if u := proxyURL(); u != nil {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.Proxy = http.ProxyURL(u)
+		h.client.Transport = transport
+		if u.User != nil {
+			if password, ok := u.User.Password(); ok {
+				h.proxyAuth = "Basic " + base64.StdEncoding.EncodeToString([]byte(u.User.Username()+":"+password))
+			}
+		}
+	}
+
+	return h
+}
+
+// proxyURL 返回解析后的代理地址；未启用或配置无效时返回 nil（直连）。
+func proxyURL() *url.URL {
+	if MetaData == nil || !MetaData.Proxy.Enable {
+		return nil
+	}
+	u, err := MetaData.Proxy.Parse()
+	if err != nil {
+		slog.Warn("invalid proxy config, falling back to direct connection", "error", err)
+		return nil
+	}
+	return u
+}
+
+// setProxyAuth 为 plain http 请求补充代理认证头；https 请求经 CONNECT 隧道时由标准库
+// 携带认证信息，不在此设置，避免凭据泄露给源站。
+func (h *httpClient) setProxyAuth(req *http.Request) {
+	if h.proxyAuth != "" && req.URL.Scheme == "http" {
+		req.Header.Set("Proxy-Authorization", h.proxyAuth)
 	}
 }
 
@@ -49,6 +85,7 @@ func (h *httpClient) doGet(url string, token string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
+	h.setProxyAuth(req)
 
 	rsp, err := h.client.Do(req)
 	if err != nil {
@@ -65,6 +102,7 @@ func (h *httpClient) doGetWithResponse(url string, token string) ([]byte, *http.
 		return nil, nil, err
 	}
 	req.Header.Set("Authorization", token)
+	h.setProxyAuth(req)
 
 	rsp, err := h.client.Do(req)
 	if err != nil {
@@ -155,7 +193,7 @@ func GetServerExpire(remoteExpire *time.Time) (*ExpireResponse, error) {
 }
 
 func CheckLocal() (*CheckResponse, error) {
-	remoteExpiry, err := cert.GetRemoteCertExpiry(MetaData.DomainCheck)
+	remoteExpiry, err := cert.GetRemoteCertExpiryWithProxy(MetaData.DomainCheck, proxyURL())
 	if err != nil {
 		return nil, fmt.Errorf("failed to check remote certificate: %v", err)
 	}

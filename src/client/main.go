@@ -54,6 +54,10 @@ func main() {
 			CertUpdateDir: "/etc/certsync/live",
 			CertUpdateCmd: "/usr/local/bin/certsync-postscript.sh",
 			Interval:      86400,
+			Proxy: meta.ProxyConfig{
+				Enable: false,
+				URL:    "http://127.0.0.1:8080",
+			},
 		}
 		err := config.WriteConfig(configFileClient, &metaData)
 		if err != nil {
@@ -76,6 +80,13 @@ func main() {
 	}
 
 	clientConfig.Generate()
+	if _, err := clientConfig.Proxy.Parse(); err != nil {
+		slog.Error("invalid proxy config", "error", err)
+		os.Exit(1)
+	}
+	if clientConfig.Proxy.Enable {
+		slog.Info("proxy enabled", "proxy", clientConfig.Proxy.URL)
+	}
 	client.MetaData = &clientConfig
 
 	interval := time.Duration(clientConfig.Interval) * time.Second
